@@ -11,8 +11,9 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "Esta aplicación necesita acceso a la cámara para escanear documentos.",
-        "NSPhotoLibraryUsageDescription": "Esta aplicación necesita acceso a la galería para seleccionar evidencias."
+        "NSCameraUsageDescription": "EduSudamericano necesita la cámara para escanear documentos académicos.",
+        "NSPhotoLibraryUsageDescription": "EduSudamericano necesita acceso a fotos para importar documentos.",
+        "NSPhotoLibraryAddUsageDescription": "Para guardar documentos escaneados en tu galería."
       }
     },
     "android": {
@@ -29,7 +30,8 @@
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
         "READ_MEDIA_IMAGES"
-      ]
+      ],
+      "package": "com.anonymous.PrototipoMobileSudamericano"
     },
     "web": {
       "output": "static",
@@ -59,7 +61,15 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "EduSudamericano necesita acceso a la cámara para escanear documentos."
+          "cameraPermission": "EduSudamericano necesita la cámara para escanear documentos.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Necesitamos acceso a tu galería para importar documentos.",
+          "savePhotosPermission": "Para guardar documentos escaneados."
         }
       ]
     ],

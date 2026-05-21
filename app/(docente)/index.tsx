@@ -53,7 +53,7 @@ export default function DocenteDashboard() {
       </Card>
 
       <Card>
-        <Text style={styles.cardTitle}>Progreso CACES</Text>
+        <Text style={styles.cardTitle}>Mi Progreso</Text>
         <ProgressBar progress={85} label="1. Organización" />
         <ProgressBar progress={60} label="2. Academia" />
         <ProgressBar progress={30} label="3. Investigación" />

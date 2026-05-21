@@ -99,7 +99,7 @@ export default function IndicadorDetalleScreen() {
           <View style={styles.emptyState}>
             <Ionicons name="cloud-upload-outline" size={48} color="#d1d5db" />
             <Text style={styles.emptyText}>No hay archivos en este indicador.</Text>
-            <Text style={styles.emptySubtext}>Toca "Subir aquí" para agregar evidencias.</Text>
+            <Text style={styles.emptySubtext}>Toca &quot;Subir aquí&quot; para agregar evidencias.</Text>
           </View>
         ) : (
           myEvidences.map(ev => (
