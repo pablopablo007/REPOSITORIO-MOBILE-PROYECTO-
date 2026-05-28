@@ -1,210 +1,353 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { 
+  View, Text, TextInput, TouchableOpacity, StyleSheet, 
+  KeyboardAvoidingView, Platform, Animated, Easing, 
+  ActivityIndicator, Keyboard, TouchableWithoutFeedback 
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState('docente@edu.ec');
   const [password, setPassword] = useState('123456');
+  const [showPassword, setShowPassword] = useState(false);
+  
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFocusedEmail, setIsFocusedEmail] = useState(false);
+  const [isFocusedPass, setIsFocusedPass] = useState(false);
+  
   const { login } = useAuth();
   const router = useRouter();
 
+  // Animation values
+  const entranceAnim = useRef(new Animated.Value(0)).current; // 0 to 1
+  const exitAnim = useRef(new Animated.Value(0)).current; // 0 to 1
+  const btnScale = useRef(new Animated.Value(1)).current;
+  const emailBorderAnim = useRef(new Animated.Value(0)).current;
+  const passBorderAnim = useRef(new Animated.Value(0)).current;
+
+  // Background circles
+  const circleAnims = useRef(Array(6).fill(0).map(() => new Animated.Value(1))).current;
+
+  useEffect(() => {
+    // 1. Círculos decorativos animados
+    circleAnims.forEach((anim, i) => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(anim, { 
+            toValue: 1.15, 
+            duration: 3000, 
+            delay: i * 400,
+            useNativeDriver: true 
+          }),
+          Animated.timing(anim, { 
+            toValue: 1.0, 
+            duration: 3000, 
+            useNativeDriver: true 
+          }),
+        ])
+      ).start();
+    });
+
+    // 2. Animación de entrada
+    Animated.timing(entranceAnim, {
+      toValue: 1,
+      duration: 800,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  // Animaciones de focus para los inputs
+  useEffect(() => {
+    Animated.timing(emailBorderAnim, {
+      toValue: isFocusedEmail ? 1 : 0,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  }, [isFocusedEmail]);
+
+  useEffect(() => {
+    Animated.timing(passBorderAnim, {
+      toValue: isFocusedPass ? 1 : 0,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  }, [isFocusedPass]);
+
   const handleLogin = async () => {
-    const success = await login(email);
+    Keyboard.dismiss();
+    
+    // Scale btn down and up
+    Animated.sequence([
+      Animated.timing(btnScale, { toValue: 0.97, duration: 100, useNativeDriver: true }),
+      Animated.timing(btnScale, { toValue: 1, duration: 100, useNativeDriver: true })
+    ]).start();
+
+    setIsLoading(true);
+
+    const success = await login(email, password);
+    
     if (success) {
-      // Redirection is handled in the _layout or we can force it here
-      const userStr = await import('@react-native-async-storage/async-storage').then(m => m.default.getItem('@user'));
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        if (user.role === 'docente') router.replace('/(docente)');
-        if (user.role === 'coordinador') router.replace('/(coordinador)');
-        if (user.role === 'admin') router.replace('/(admin)');
-      }
+      // 1. Botón muestra spinner (ya está en isLoading) 1.5s
+      setTimeout(() => {
+        // 2. Card hace fade out hacia arriba
+        Animated.timing(exitAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }).start(() => {
+          // 4. Navegar a /(docente)
+          router.replace('/(docente)');
+        });
+      }, 1500);
     } else {
+      setIsLoading(false);
       alert('Credenciales incorrectas');
     }
   };
 
-  const selectRole = (roleEmail: string) => {
-    setEmail(roleEmail);
-  };
+  // Interpolaciones de entrada
+  const translateY = entranceAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [60, 0]
+  });
+  
+  const opacity = entranceAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1]
+  });
+
+  // Interpolaciones de salida
+  const exitTranslateY = exitAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -30]
+  });
+  
+  const exitOpacity = exitAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0]
+  });
+
+  const whiteFadeOpacity = exitAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1]
+  });
+
+  // Interpolaciones de bordes (Note: backgroundColor/borderColor requires useNativeDriver: false)
+  const emailBorderColor = emailBorderAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['#e2e8f0', '#2563eb']
+  });
+  
+  const passBorderColor = passBorderAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['#e2e8f0', '#2563eb']
+  });
+
+  const circulos = [
+    { size: 200, top: -50, left: -50, color: 'rgba(37,99,235,0.15)' },
+    { size: 150, top: 100, right: -30, color: 'rgba(99,102,241,0.1)' },
+    { size: 100, top: 300, left: 20, color: 'rgba(37,99,235,0.08)' },
+    { size: 180, bottom: 100, right: -40, color: 'rgba(99,102,241,0.12)' },
+    { size: 80, bottom: 200, left: 60, color: 'rgba(37,99,235,0.1)' },
+    { size: 120, bottom: -30, left: -20, color: 'rgba(99,102,241,0.08)' },
+  ];
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <View style={styles.header}>
-          <Ionicons name="school" size={80} color="#2563eb" />
-          <Text style={styles.title}>EduSudamericano</Text>
-          <Text style={styles.subtitle}>Gestión de Evidencias CACES</Text>
-        </View>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <KeyboardAvoidingView 
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#0f172a' }]} />
 
-        <View style={styles.roleSelector}>
-          <Text style={styles.label}>Selecciona un rol para pruebas:</Text>
-          
-          <TouchableOpacity 
-            style={[styles.roleButton, email === 'docente@edu.ec' && styles.roleActiveDocente]} 
-            onPress={() => selectRole('docente@edu.ec')}
-          >
-            <Ionicons name="person" size={24} color={email === 'docente@edu.ec' ? '#fff' : '#2563eb'} />
-            <View style={styles.roleInfo}>
-              <Text style={[styles.roleName, email === 'docente@edu.ec' && {color: '#fff'}]}>Docente</Text>
-              <Text style={[styles.roleEmail, email === 'docente@edu.ec' && {color: '#e0e7ff'}]}>docente@edu.ec</Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.roleButton, email === 'coordinador@edu.ec' && styles.roleActiveCoordinador]} 
-            onPress={() => selectRole('coordinador@edu.ec')}
-          >
-            <Ionicons name="shield-checkmark" size={24} color={email === 'coordinador@edu.ec' ? '#fff' : '#0f766e'} />
-            <View style={styles.roleInfo}>
-              <Text style={[styles.roleName, email === 'coordinador@edu.ec' && {color: '#fff'}]}>Coordinador</Text>
-              <Text style={[styles.roleEmail, email === 'coordinador@edu.ec' && {color: '#ccfbf1'}]}>coordinador@edu.ec</Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.roleButton, email === 'admin@edu.ec' && styles.roleActiveAdmin]} 
-            onPress={() => selectRole('admin@edu.ec')}
-          >
-            <Ionicons name="settings" size={24} color={email === 'admin@edu.ec' ? '#fff' : '#7c3aed'} />
-            <View style={styles.roleInfo}>
-              <Text style={[styles.roleName, email === 'admin@edu.ec' && {color: '#fff'}]}>Administrador</Text>
-              <Text style={[styles.roleEmail, email === 'admin@edu.ec' && {color: '#ede9fe'}]}>admin@edu.ec</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.form}>
-          <Text style={styles.label}>Correo Electrónico</Text>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            placeholder="correo@edu.ec"
-            autoCapitalize="none"
-            keyboardType="email-address"
+        {/* Círculos decorativos de fondo */}
+        {circulos.map((c, i) => (
+          <Animated.View 
+            key={i}
+            style={[
+              styles.circle,
+              {
+                width: c.size,
+                height: c.size,
+                borderRadius: c.size / 2,
+                backgroundColor: c.color,
+                top: c.top,
+                bottom: c.bottom,
+                left: c.left,
+                right: c.right,
+                transform: [{ scale: circleAnims[i] }]
+              }
+            ]}
           />
+        ))}
 
-          <Text style={styles.label}>Contraseña</Text>
-          <TextInput
-            style={styles.input}
-            value={password}
-            onChangeText={setPassword}
-            placeholder="********"
-            secureTextEntry
-          />
+        <Animated.View style={[styles.contentWrapper, { opacity, transform: [{ translateY }, { translateY: exitTranslateY }] }]}>
+          <Animated.View style={{ opacity: exitOpacity }}>
+            <View style={styles.header}>
+              <Ionicons name="school" size={60} color="#fff" />
+              <Text style={styles.title}>EduSudamericano</Text>
+              <Text style={styles.subtitle}>Gestión Académica</Text>
+            </View>
 
-          <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-            <Text style={styles.loginButtonText}>Ingresar</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Bienvenido</Text>
+              <Text style={styles.cardSubtitle}>Inicia sesión para continuar</Text>
+
+              {/* Email Input */}
+              <Animated.View style={[styles.inputContainer, { borderColor: emailBorderColor }]}>
+                <Ionicons name="mail-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="correo@edu.ec"
+                  placeholderTextColor="#94a3b8"
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  onFocus={() => setIsFocusedEmail(true)}
+                  onBlur={() => setIsFocusedEmail(false)}
+                />
+              </Animated.View>
+
+              {/* Password Input */}
+              <Animated.View style={[styles.inputContainer, { borderColor: passBorderColor }]}>
+                <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="********"
+                  placeholderTextColor="#94a3b8"
+                  secureTextEntry={!showPassword}
+                  onFocus={() => setIsFocusedPass(true)}
+                  onBlur={() => setIsFocusedPass(false)}
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
+                  <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#94a3b8" />
+                </TouchableOpacity>
+              </Animated.View>
+
+              {/* Login Button */}
+              <Animated.View style={{ transform: [{ scale: btnScale }] }}>
+                <TouchableOpacity activeOpacity={1} onPress={handleLogin} disabled={isLoading}>
+                  <View style={[styles.loginButton, { backgroundColor: '#2563eb' }]}>
+                    {isLoading ? (
+                      <ActivityIndicator color="#ffffff" size="small" />
+                    ) : (
+                      <Text style={styles.loginButtonText}>Iniciar sesión</Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              </Animated.View>
+            </View>
+
+            <Text style={styles.footerText}>© 2025 EduSudamericano · Universidad Sudamericana</Text>
+          </Animated.View>
+        </Animated.View>
+
+        {/* Fade a blanco final */}
+        <Animated.View 
+          pointerEvents="none" 
+          style={[StyleSheet.absoluteFillObject, { backgroundColor: '#f4f6f9', opacity: whiteFadeOpacity, zIndex: 10 }]} 
+        />
+        
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#0f172a',
   },
-  scroll: {
-    flexGrow: 1,
+  circle: {
+    position: 'absolute',
+    zIndex: 0,
+  },
+  contentWrapper: {
+    flex: 1,
     justifyContent: 'center',
-    padding: 24,
+    paddingHorizontal: 24,
+    zIndex: 1,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 48,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#1f2937',
-    marginTop: 16,
+    color: '#ffffff',
+    marginTop: 12,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#6b7280',
-    marginTop: 8,
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.6)',
+    marginTop: 6,
   },
-  roleSelector: {
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
     marginBottom: 32,
-    gap: 12,
   },
-  roleButton: {
+  cardTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#0f172a',
+    marginBottom: 4,
+  },
+  cardSubtitle: {
+    fontSize: 13,
+    color: '#64748b',
+    marginBottom: 24,
+  },
+  inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: '#f8fafc',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    height: 52,
+    marginBottom: 16,
   },
-  roleActiveDocente: {
-    backgroundColor: '#2563eb',
-    borderColor: '#2563eb',
-  },
-  roleActiveCoordinador: {
-    backgroundColor: '#0f766e',
-    borderColor: '#0f766e',
-  },
-  roleActiveAdmin: {
-    backgroundColor: '#7c3aed',
-    borderColor: '#7c3aed',
-  },
-  roleInfo: {
-    marginLeft: 16,
-  },
-  roleName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#374151',
-  },
-  roleEmail: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  form: {
-    backgroundColor: '#fff',
-    padding: 24,
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#4b5563',
-    marginBottom: 8,
+  inputIcon: {
+    marginRight: 10,
   },
   input: {
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    fontSize: 16,
+    flex: 1,
+    fontSize: 15,
+    color: '#0f172a',
+    height: '100%',
+  },
+  eyeBtn: {
+    padding: 4,
   },
   loginButton: {
-    backgroundColor: '#2563eb',
-    padding: 16,
-    borderRadius: 8,
+    height: 52,
+    borderRadius: 12,
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 8,
   },
   loginButtonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  footerText: {
+    textAlign: 'center',
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.4)',
   },
 });

@@ -50,8 +50,6 @@ export default function RootLayout() {
             <Stack.Screen name="index" />
             <Stack.Screen name="login" />
             <Stack.Screen name="(docente)" />
-            <Stack.Screen name="(coordinador)" />
-            <Stack.Screen name="(admin)" />
             <Stack.Screen
               name="indicador-detalle"
               options={{
@@ -62,16 +60,7 @@ export default function RootLayout() {
                 presentation: 'card',
               }}
             />
-            <Stack.Screen
-              name="perfil"
-              options={{
-                headerShown: true,
-                headerStyle: { backgroundColor: '#1e2d4a' },
-                headerTintColor: '#fff',
-                headerTitle: 'Mi Perfil',
-                presentation: 'card',
-              }}
-            />
+
             <Stack.Screen
               name="escaner"
               options={{

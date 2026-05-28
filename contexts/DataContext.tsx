@@ -62,18 +62,10 @@ export interface Notification {
   type: 'success' | 'warning' | 'info';
 }
 
-export interface Config {
-  thresholdGreen: number;
-  thresholdAmber: number;
-  allowIA: boolean;
-  autoNotifications: boolean;
-}
-
 interface DataContextData {
   evidences: Evidence[];
   notifications: Notification[];
   tasks: Task[];
-  config: Config;
   isLoading: boolean;
   unreadCount: number;
   uploadEvidence: (evidence: EvidenceDraft) => Promise<string>;
@@ -81,25 +73,17 @@ interface DataContextData {
   deleteEvidence: (id: string) => Promise<void>;
   markNotificationRead: (id: string) => Promise<void>;
   completeTask: (taskId: string, evidenceId: string) => Promise<void>;
-  updateConfig: (newConfig: Partial<Config>) => Promise<void>;
   clearData: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextData>({} as DataContextData);
-
-const INITIAL_CONFIG: Config = {
-  thresholdGreen: 70,
-  thresholdAmber: 40,
-  allowIA: true,
-  autoNotifications: true,
-};
 
 const SEED_NOTIFICATIONS: Notification[] = [
   {
     id: 'seed-1',
     userId: '1',
     title: 'Documento observado',
-    message: "Tu documento 'Portafolio_Docente_2025.pdf' fue observado por Coordinación. Comentario: Falta firma del director.",
+    message: "Tu documento 'Acta_Reunion_Marzo.docx' fue observado. Comentario: Falta firma del director.",
     date: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
     read: false,
     type: 'warning',
@@ -107,11 +91,11 @@ const SEED_NOTIFICATIONS: Notification[] = [
   {
     id: 'seed-2',
     userId: '1',
-    title: 'Documentos pendientes',
-    message: 'Tienes documentos pendientes de validación. Revisa el estado desde Mis Documentos.',
+    title: 'Nueva actividad asignada',
+    message: "Certificado de capacitación",
     date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     read: false,
-    type: 'warning',
+    type: 'info',
   },
   {
     id: 'seed-3',
@@ -122,27 +106,8 @@ const SEED_NOTIFICATIONS: Notification[] = [
     read: true,
     type: 'success',
   },
-  {
-    id: 'seed-4',
-    userId: '1',
-    title: 'Bienvenida',
-    message: 'Bienvenido al sistema EduSudamericano. Completa tu perfil para comenzar.',
-    date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    read: true,
-    type: 'info',
-  },
-  {
-    id: 'seed-5',
-    userId: '1',
-    title: 'Período abierto',
-    message: 'El período 2025 está abierto. Puedes comenzar a subir documentos.',
-    date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    read: true,
-    type: 'info',
-  },
 ];
 
-const daysAgo = (days: number) => new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 const daysFromNow = (days: number) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 const specificDate = (y: number, m: number, d: number) => new Date(y, m - 1, d).toISOString();
 
@@ -151,17 +116,17 @@ const SEED_TASKS: Task[] = [
     id: 'task-1',
     docenteId: '1',
     title: 'Subir título de cuarto nivel',
-    description: 'Sube tu título de maestría o doctorado en formato PDF, debe estar firmado y sellado.',
-    deadline: daysFromNow(3),
+    description: 'Sube tu título de maestría en PDF firmado y sellado',
+    deadline: daysFromNow(2),
     documentType: 'Título/Certificado',
     completed: false,
   },
   {
     id: 'task-2',
     docenteId: '1',
-    title: 'Syllabus del período 2025',
-    description: 'Sube el syllabus actualizado de todas las materias que dictas este período.',
-    deadline: daysFromNow(7),
+    title: 'Syllabus período 2025',
+    description: 'Sube el syllabus de todas tus materias actualizadas',
+    deadline: daysFromNow(6),
     documentType: 'Académico',
     completed: false,
   },
@@ -169,7 +134,7 @@ const SEED_TASKS: Task[] = [
     id: 'task-3',
     docenteId: '1',
     title: 'Certificado de capacitación docente',
-    description: 'Sube certificados de cursos o talleres realizados en los últimos 2 años.',
+    description: 'Sube certificados de cursos realizados',
     deadline: daysFromNow(10),
     documentType: 'Título/Certificado',
     completed: false,
@@ -188,45 +153,15 @@ const SEED_EVIDENCES: Evidence[] = [
     status: 'Validado',
   },
   {
-    id: 'doc-acad-2',
-    docenteId: '1',
-    docenteName: 'Prof. Pablo Mora',
-    documentType: 'Académico',
-    periodo: '2025',
-    fileName: 'Plan_Clase_Mayo_2025.docx',
-    date: specificDate(2025, 5, 2),
-    status: 'Pendiente',
-  },
-  {
     id: 'doc-cert-1',
     docenteId: '1',
     docenteName: 'Prof. Pablo Mora',
     documentType: 'Título/Certificado',
     periodo: '2025',
-    fileName: 'Titulo_Maestria_Ciencias.pdf',
-    date: specificDate(2025, 1, 10),
-    status: 'Validado',
-  },
-  {
-    id: 'doc-cert-2',
-    docenteId: '1',
-    docenteName: 'Prof. Pablo Mora',
-    documentType: 'Título/Certificado',
-    periodo: '2025',
-    fileName: 'Certificado_Curso_TIC.pdf',
-    date: specificDate(2025, 2, 20),
-    status: 'Observado',
-    comment: 'El certificado debe tener mínimo 40 horas, este tiene 20.',
-  },
-  {
-    id: 'doc-inf-1',
-    docenteId: '1',
-    docenteName: 'Prof. Pablo Mora',
-    documentType: 'Informe',
-    periodo: '2025',
-    fileName: 'Informe_Actividades_Abril.pdf',
-    date: specificDate(2025, 4, 30),
-    status: 'Validado',
+    fileName: 'Titulo_Maestria.pdf',
+    date: specificDate(2025, 5, 20),
+    status: 'Pendiente',
+    scanned: true,
   },
   {
     id: 'doc-acta-1',
@@ -237,29 +172,7 @@ const SEED_EVIDENCES: Evidence[] = [
     fileName: 'Acta_Reunion_Marzo.docx',
     date: specificDate(2025, 3, 15),
     status: 'Observado',
-    comment: 'Falta firma del director de carrera.',
-  },
-  {
-    id: 'doc-ia-1',
-    docenteId: '1',
-    docenteName: 'Prof. Pablo Mora',
-    documentType: 'Generado con IA',
-    periodo: '2025',
-    fileName: 'Informe_Planificacion_2025.pdf',
-    date: specificDate(2025, 5, 13),
-    status: 'Pendiente',
-    iaGenerated: true,
-  },
-  {
-    id: 'doc-scan-1',
-    docenteId: '1',
-    docenteName: 'Prof. Pablo Mora',
-    documentType: 'Escaneado',
-    periodo: '2025',
-    fileName: 'Scan_Certificado_13-05-2025.pdf',
-    date: specificDate(2025, 5, 13),
-    status: 'Pendiente',
-    scanned: true,
+    comment: 'Falta firma del director',
   },
 ];
 
@@ -298,7 +211,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [evidences, setEvidences] = useState<Evidence[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [config, setConfig] = useState<Config>(INITIAL_CONFIG);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
 
@@ -306,7 +218,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     loadData();
-  }, [user?.id]); // Reload data when user changes to ensure correct user-scoped keys
+  }, [user?.id]); 
 
   const loadData = async () => {
     try {
@@ -315,7 +227,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const storedEvidences = await AsyncStorage.getItem(userEvidencesKey) || await AsyncStorage.getItem('@evidences');
       const storedNotifications = await AsyncStorage.getItem('@notifications');
       const storedTasks = await AsyncStorage.getItem('@tasks');
-      const storedConfig = await AsyncStorage.getItem('@config');
 
       if (storedEvidences) {
         const parsedEvidences = JSON.parse(storedEvidences).map(normalizeEvidence);
@@ -340,8 +251,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         setTasks(SEED_TASKS);
         await saveData('@tasks', SEED_TASKS);
       }
-
-      if (storedConfig) setConfig(JSON.parse(storedConfig));
     } catch (e) {
       console.error('Failed to load data', e);
     } finally {
@@ -395,7 +304,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const newNotif: Notification = {
         id: Date.now().toString(),
         userId: evidence.docenteId,
-        title: status === 'Validado' ? 'Documento validado' : 'Documento observado',
+        title: status === 'Validado' ? 'Documento validado' : 'Tu archivo fue observado',
         message: status === 'Validado'
           ? `Tu documento ${evidence.fileName} ha sido validado.`
           : `Tu documento ${evidence.fileName} tiene observaciones: ${comment}`,
@@ -423,20 +332,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     await saveData('@notifications', updated);
   };
 
-  const updateConfig = async (newConfig: Partial<Config>) => {
-    const updated = { ...config, ...newConfig };
-    setConfig(updated);
-    await saveData('@config', updated);
-  };
-
   const clearData = async () => {
     const normalizedSeed = SEED_EVIDENCES.map(normalizeEvidence);
     setEvidences(normalizedSeed);
     setNotifications(SEED_NOTIFICATIONS);
     setTasks(SEED_TASKS);
-    setConfig(INITIAL_CONFIG);
     const userId = user?.id || '1';
-    await AsyncStorage.multiRemove([`@evidencias_${userId}`, '@evidences', '@notifications', '@tasks', '@config']);
+    await AsyncStorage.multiRemove([`@evidencias_${userId}`, '@evidences', '@notifications', '@tasks']);
     await saveData(`@evidencias_${userId}`, normalizedSeed);
     await saveData('@evidences', normalizedSeed);
     await saveData('@notifications', SEED_NOTIFICATIONS);
@@ -448,7 +350,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       evidences,
       notifications,
       tasks,
-      config,
       isLoading,
       unreadCount,
       uploadEvidence,
@@ -456,7 +357,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       deleteEvidence,
       markNotificationRead,
       completeTask,
-      updateConfig,
       clearData,
     }}>
       {children}
@@ -467,3 +367,4 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 export function useData() {
   return useContext(DataContext);
 }
+
