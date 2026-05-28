@@ -1,19 +1,16 @@
 import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
-import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function IndexScreen() {
   const router = useRouter();
+  const { user, isLoading } = useAuth();
 
   useEffect(() => {
-    const init = async () => {
-      // Siempre limpiar sesión al abrir la app - forzar login
-      await AsyncStorage.removeItem('@user');
-      router.replace('/login');
-    };
-    init();
-  }, []);
+    if (isLoading) return;
+    router.replace(user ? '/(docente)' : '/login');
+  }, [isLoading, router, user]);
 
   return (
     <View style={styles.container}>

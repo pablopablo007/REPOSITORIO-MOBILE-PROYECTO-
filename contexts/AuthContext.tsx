@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface User {
@@ -14,13 +14,13 @@ export interface User {
   degree?: string;
 }
 
-const MOCK_USER: User = {
+const DEMO_DOCENTE: User = {
   id: '1',
   name: 'Prof. Pablo Mora',
   email: 'docente@edu.ec',
   active: true,
   phone: '+593 98 765 4321',
-  department: 'Ciencias Biológicas',
+  department: 'Ciencias Biologicas',
   period: '2025',
   initials: 'PM',
 };
@@ -37,16 +37,39 @@ const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const restoreSession = async () => {
+      try {
+        const storedUser = await AsyncStorage.getItem('@user');
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        }
+      } catch (error) {
+        console.error('Failed to restore docente session', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    restoreSession();
+  }, []);
 
   const login = async (email: string, password?: string): Promise<boolean> => {
-    // Aceptamos el usuario de prueba
-    if (email === MOCK_USER.email && password === '123456') {
-      setUser(MOCK_USER);
-      await AsyncStorage.setItem('@user', JSON.stringify(MOCK_USER));
-      return true;
+    setIsLoading(true);
+
+    try {
+      if (email === DEMO_DOCENTE.email && password === '123456') {
+        setUser(DEMO_DOCENTE);
+        await AsyncStorage.setItem('@user', JSON.stringify(DEMO_DOCENTE));
+        return true;
+      }
+
+      return false;
+    } finally {
+      setIsLoading(false);
     }
-    return false;
   };
 
   const logout = async () => {

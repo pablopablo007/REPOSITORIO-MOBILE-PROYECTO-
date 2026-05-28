@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useData } from '../../contexts/DataContext';
 import * as DocumentPicker from 'expo-document-picker';
 import Toast from 'react-native-toast-message';
+import { useData } from '../../contexts/DataContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 const getDaysRemaining = (deadline: string) => {
   const diff = new Date(deadline).getTime() - Date.now();
@@ -13,16 +14,24 @@ const getDaysRemaining = (deadline: string) => {
 
 export default function ActividadesScreen() {
   const { tasks, uploadEvidence, completeTask, evidences } = useData();
+  const { user } = useAuth();
   const router = useRouter();
 
   const [iaModalVisible, setIaModalVisible] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [iaDescription, setIaDescription] = useState('');
-  const [iaType, setIaType] = useState('Informe');
+  const [iaType] = useState('Informe');
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const pendingTasks = tasks.filter(t => !t.completed).sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
-  const completedTasks = tasks.filter(t => t.completed).sort((a, b) => new Date(b.deadline).getTime() - new Date(a.deadline).getTime());
+  const pendingTasks = tasks
+    .filter((task) => !task.completed)
+    .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
+  const completedTasks = tasks
+    .filter((task) => task.completed)
+    .sort((a, b) => new Date(b.deadline).getTime() - new Date(a.deadline).getTime());
+
+  const docenteId = user?.id || '1';
+  const docenteName = user?.name || 'Prof. Pablo Mora';
 
   const handleSubirDirecto = async (taskId: string, documentType: string, taskTitle: string) => {
     try {
@@ -30,8 +39,8 @@ export default function ActividadesScreen() {
       if (!result.canceled && result.assets.length > 0) {
         const file = result.assets[0];
         const evidenceId = await uploadEvidence({
-          docenteId: '1',
-          docenteName: 'Prof. Pablo Mora',
+          docenteId,
+          docenteName,
           documentType: documentType as any,
           periodo: '2025',
           fileName: file.name,
@@ -40,7 +49,7 @@ export default function ActividadesScreen() {
         await completeTask(taskId, evidenceId);
         Toast.show({ type: 'success', text1: 'Archivo subido correctamente' });
       }
-    } catch (e) {
+    } catch {
       Toast.show({ type: 'error', text1: 'Error al subir el archivo' });
     }
   };
@@ -53,85 +62,91 @@ export default function ActividadesScreen() {
   const confirmGenerateIA = () => {
     if (!selectedTaskId) return;
     setIsGenerating(true);
-    
+
     setTimeout(async () => {
-      const task = tasks.find(t => t.id === selectedTaskId);
+      const task = tasks.find((currentTask) => currentTask.id === selectedTaskId);
+
       if (task) {
         const generatedName = `${task.title.replace(/\s+/g, '_')}_IA.pdf`;
         const evidenceId = await uploadEvidence({
-          docenteId: '1',
-          docenteName: 'Prof. Pablo Mora',
+          docenteId,
+          docenteName,
           documentType: 'Generado con IA',
           periodo: '2025',
           fileName: generatedName,
           description: iaDescription || `Generado por IA para: ${task.title}`,
           iaGenerated: true,
         });
+
         await completeTask(selectedTaskId, evidenceId);
-        Toast.show({ type: 'success', text1: 'Documento generado ✓' });
+        Toast.show({ type: 'success', text1: 'Documento generado' });
       }
+
       setIsGenerating(false);
       setIaModalVisible(false);
       setIaDescription('');
     }, 2000);
   };
 
-  const selectedTask = tasks.find(t => t.id === selectedTaskId);
+  const selectedTask = tasks.find((task) => task.id === selectedTaskId);
 
   return (
     <View style={styles.container}>
-      
-      {/* Hero Header */}
       <View style={styles.heroCard}>
         <Text style={styles.heroTitle}>Mis Actividades</Text>
-        <Text style={styles.heroSubtitle}>{tasks.length} tareas asignadas • {completedTasks.length} completadas</Text>
+        <Text style={styles.heroSubtitle}>
+          {tasks.length} tareas disponibles • {completedTasks.length} completadas
+        </Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        
-        {/* PENDIENTES */}
-        {pendingTasks.length > 0 && (
-          <Text style={styles.sectionTitle}>PENDIENTES ({pendingTasks.length})</Text>
-        )}
-        
-        {pendingTasks.map(task => {
+        {pendingTasks.length > 0 && <Text style={styles.sectionTitle}>PENDIENTES ({pendingTasks.length})</Text>}
+
+        {pendingTasks.map((task) => {
           const daysLeft = getDaysRemaining(task.deadline);
-          let urgencyColor = '#3b82f6'; // Azul > 7
-          let badgeIcon = '🔵';
+          let urgencyColor = '#3b82f6';
+          let priorityLabel = 'baja';
+
           if (daysLeft <= 3) {
-            urgencyColor = '#dc2626'; // Rojo <= 3
-            badgeIcon = '🔴';
+            urgencyColor = '#dc2626';
+            priorityLabel = 'alta';
           } else if (daysLeft <= 7) {
-            urgencyColor = '#f59e0b'; // Ámbar <= 7
-            badgeIcon = '🟡';
+            urgencyColor = '#f59e0b';
+            priorityLabel = 'media';
           }
 
           return (
             <View key={task.id} style={[styles.pendingCard, { borderLeftColor: urgencyColor }]}>
               <View style={styles.pendingCardBody}>
                 <View style={styles.iconBox}>
-                  <Text style={{fontSize: 22}}>📋</Text>
+                  <Text style={styles.iconLabel}>DOC</Text>
                 </View>
                 <View style={styles.taskInfo}>
                   <Text style={styles.taskTitle}>{task.title}</Text>
                   <Text style={styles.taskDesc}>{task.description}</Text>
-                  <Text style={styles.urgencyBadge}>{badgeIcon} Vence en {daysLeft} días</Text>
+                  <Text style={styles.urgencyBadge}>Prioridad {priorityLabel} • vence en {daysLeft} dias</Text>
                 </View>
               </View>
-              
+
               <View style={styles.actionsRow}>
-                <TouchableOpacity style={styles.actionBtn} onPress={() => handleSubirDirecto(task.id, task.documentType, task.title)}>
+                <TouchableOpacity
+                  style={styles.actionBtn}
+                  onPress={() => handleSubirDirecto(task.id, task.documentType, task.title)}
+                >
                   <Ionicons name="cloud-upload-outline" size={18} color="#475569" />
                   <Text style={styles.actionBtnText}>Subir</Text>
                 </TouchableOpacity>
-                
+
                 <View style={styles.divider} />
-                
-                <TouchableOpacity style={styles.actionBtn} onPress={() => router.push({ pathname: '/escaner', params: { taskId: task.id } })}>
+
+                <TouchableOpacity
+                  style={styles.actionBtn}
+                  onPress={() => router.push({ pathname: '/escaner', params: { taskId: task.id } })}
+                >
                   <Ionicons name="camera-outline" size={18} color="#475569" />
                   <Text style={styles.actionBtnText}>Escanear</Text>
                 </TouchableOpacity>
-                
+
                 <View style={styles.divider} />
 
                 <TouchableOpacity style={styles.actionBtn} onPress={() => handleIA(task.id)}>
@@ -146,45 +161,38 @@ export default function ActividadesScreen() {
           );
         })}
 
-        {/* COMPLETADAS */}
         {completedTasks.length > 0 && (
           <Text style={[styles.sectionTitle, { marginTop: 16 }]}>COMPLETADAS ({completedTasks.length})</Text>
         )}
 
-        {completedTasks.map(task => {
-          const linkedEvidence = task.completedEvidenceId 
-            ? evidences.find(e => e.id === task.completedEvidenceId)
+        {completedTasks.map((task) => {
+          const linkedEvidence = task.completedEvidenceId
+            ? evidences.find((evidence) => evidence.id === task.completedEvidenceId)
             : null;
-          
-          const deliveryDate = linkedEvidence?.date 
-            ? new Date(linkedEvidence.date).toLocaleDateString('es-EC', {day: 'numeric', month: 'short'})
+
+          const deliveryDate = linkedEvidence?.date
+            ? new Date(linkedEvidence.date).toLocaleDateString('es-EC', { day: 'numeric', month: 'short' })
             : 'Hoy';
 
           return (
             <View key={task.id} style={styles.completedCard}>
-              <Text style={styles.completedIcon}>✅</Text>
+              <Text style={styles.completedIcon}>OK</Text>
               <View style={styles.completedInfo}>
                 <Text style={styles.completedTitle}>{task.title}</Text>
-                <Text style={styles.completedMeta}>
-                  {linkedEvidence ? linkedEvidence.fileName : 'Documento entregado'}
-                </Text>
-                <Text style={styles.completedMeta}>
-                  Entregado el {deliveryDate}
-                </Text>
+                <Text style={styles.completedMeta}>{linkedEvidence ? linkedEvidence.fileName : 'Documento entregado'}</Text>
+                <Text style={styles.completedMeta}>Entregado el {deliveryDate}</Text>
               </View>
             </View>
           );
         })}
-
       </ScrollView>
 
-      {/* MODAL IA */}
       <Modal visible={iaModalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <TouchableOpacity style={styles.modalBackdrop} onPress={() => !isGenerating && setIaModalVisible(false)} />
           <View style={styles.bottomSheet}>
             <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>✨ Generar documento con IA</Text>
+            <Text style={styles.sheetTitle}>Generar documento con IA</Text>
             <View style={styles.sheetBadge}>
               <Text style={styles.sheetBadgeText}>BETA</Text>
             </View>
@@ -206,28 +214,28 @@ export default function ActividadesScreen() {
               <View style={styles.half}>
                 <Text style={styles.label}>Tipo:</Text>
                 <View style={styles.pillBox}>
-                  <Text style={styles.pillText}>{iaType} ▾</Text>
+                  <Text style={styles.pillText}>{iaType} ▼</Text>
                 </View>
               </View>
               <View style={styles.half}>
                 <Text style={styles.label}>Formato:</Text>
                 <View style={styles.formatRow}>
-                  <View style={[styles.pillBox, styles.pillActive]}><Text style={styles.pillActiveText}>PDF</Text></View>
-                  <View style={styles.pillBox}><Text style={styles.pillText}>DOCX</Text></View>
+                  <View style={[styles.pillBox, styles.pillActive]}>
+                    <Text style={styles.pillActiveText}>PDF</Text>
+                  </View>
+                  <View style={styles.pillBox}>
+                    <Text style={styles.pillText}>DOCX</Text>
+                  </View>
                 </View>
               </View>
             </View>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.primaryBtn, isGenerating && styles.primaryBtnDisabled]}
               onPress={confirmGenerateIA}
               disabled={isGenerating}
             >
-              {isGenerating ? (
-                <Text style={styles.btnText}>Generando con IA...</Text>
-              ) : (
-                <Text style={styles.btnText}>✨ Generar y guardar</Text>
-              )}
+              <Text style={styles.btnText}>{isGenerating ? 'Generando con IA...' : 'Generar y guardar'}</Text>
             </TouchableOpacity>
 
             {!isGenerating && (
@@ -298,10 +306,15 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: '#eff6ff', // Azul muy claro
+    backgroundColor: '#eff6ff',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+  },
+  iconLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#2563eb',
   },
   taskInfo: {
     flex: 1,
@@ -380,7 +393,9 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   completedIcon: {
-    fontSize: 20,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#15803d',
     marginRight: 12,
     marginLeft: 4,
   },
