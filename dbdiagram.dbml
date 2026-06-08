@@ -1,0 +1,86 @@
+// Estructura de base de datos para https://dbdiagram.io/
+
+Table users {
+  id uuid [primary key]
+  name varchar
+  email varchar [unique]
+  password_hash varchar
+  avatar varchar
+  active boolean
+  phone varchar
+  department varchar
+  period varchar
+  initials varchar
+  degree varchar
+  role Role
+  created_at timestamp
+}
+
+Table evidences {
+  id uuid [primary key]
+  docente_id uuid
+  document_type DocumentType
+  periodo varchar
+  file_name varchar
+  file_url varchar
+  status EvidenceStatus
+  comment text
+  description text
+  ia_generated boolean [default: false]
+  scanned boolean [default: false]
+  created_at timestamp
+}
+
+Table tasks {
+  id uuid [primary key]
+  docente_id uuid
+  title varchar
+  description text
+  deadline timestamp
+  document_type varchar
+  completed boolean [default: false]
+  completed_evidence_id uuid
+  created_at timestamp
+}
+
+Table notifications {
+  id uuid [primary key]
+  user_id uuid
+  title varchar
+  message text
+  type NotificationType
+  is_read boolean [default: false]
+  created_at timestamp
+}
+
+Enum Role {
+  DOCENTE
+}
+
+Enum DocumentType {
+  "Académico"
+  "Título/Certificado"
+  "Informe"
+  "Acta"
+  "Generado con IA"
+  "Escaneado"
+  "Otro"
+}
+
+Enum EvidenceStatus {
+  "Pendiente"
+  "Validado"
+  "Observado"
+}
+
+Enum NotificationType {
+  success
+  warning
+  info
+}
+
+// Relaciones
+Ref: evidences.docente_id > users.id
+Ref: tasks.docente_id > users.id
+Ref: notifications.user_id > users.id
+Ref: tasks.completed_evidence_id - evidences.id

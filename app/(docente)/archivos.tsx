@@ -209,7 +209,7 @@ export default function ArchivosScreen() {
 
         {doc.status === 'Observado' && doc.comment && (
           <View style={styles.obsBox}>
-            <Text style={styles.obsText}>💬 "{doc.comment}"</Text>
+            <Text style={styles.obsText}>💬 &quot;{doc.comment}&quot;</Text>
           </View>
         )}
 

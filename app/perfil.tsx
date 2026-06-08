@@ -8,8 +8,6 @@ import Toast from 'react-native-toast-message';
 
 const ROLE_COLORS: Record<string, { bg: string; text: string; label: string }> = {
   docente: { bg: '#dbeafe', text: '#1e40af', label: 'Docente' },
-  coordinador: { bg: '#ccfbf1', text: '#0f766e', label: 'Coordinador' },
-  admin: { bg: '#ede9fe', text: '#7c3aed', label: 'Administrador' },
 };
 
 export default function PerfilScreen() {

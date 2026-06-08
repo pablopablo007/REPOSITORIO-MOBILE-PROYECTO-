@@ -190,7 +190,7 @@ export default function ActividadesScreen() {
             </View>
 
             <Text style={styles.label}>Tarea vinculada:</Text>
-            <Text style={styles.taskValue}>"{selectedTask?.title}"</Text>
+            <Text style={styles.taskValue}>&quot;{selectedTask?.title}&quot;</Text>
 
             <Text style={styles.label}>Describe lo que necesitas:</Text>
             <TextInput

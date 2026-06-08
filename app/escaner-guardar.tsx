@@ -148,20 +148,34 @@ export default function EscanerGuardarScreen() {
 <head>
 <meta charset="utf-8">
 <style>
+  @page { size: 595pt 842pt; margin: 0; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #fff; }
+  html, body {
+    width: 595pt;
+    min-height: 842pt;
+    background: #fff;
+  }
   .pagina {
-    width: 100%;
-    min-height: 100vh;
+    width: 595pt;
+    height: 842pt;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
+    padding: 18pt;
     page-break-after: always;
-    padding: 20px;
+    break-after: page;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .pagina:last-child {
+    page-break-after: auto;
+    break-after: auto;
   }
   img {
-    max-width: 100%;
-    max-height: 95vh;
+    display: block;
+    width: 100%;
+    height: 100%;
     object-fit: contain;
   }
 </style>

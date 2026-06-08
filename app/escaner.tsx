@@ -58,22 +58,83 @@ export default function EscanerScreen() {
 
   const existingPages: string[] = params.existingPages ? JSON.parse(params.existingPages) : [];
   const isWeb = Platform.OS === 'web';
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
-    if (isWeb) return;
+    isMountedRef.current = true;
+    if (Platform.OS === 'ios') {
+      // Small delay to let the screen fully mount before opening the native camera
+      const timer = setTimeout(() => {
+        if (isMountedRef.current) {
+          abrirCamaraIOS();
+        }
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+    return () => { isMountedRef.current = false; };
+  }, []);
+
+  const abrirCamaraIOS = async () => {
+    try {
+      const permiso = await ImagePicker.requestCameraPermissionsAsync();
+      if (!isMountedRef.current) return;
+
+      if (!permiso.granted) {
+        Alert.alert(
+          'Permiso requerido',
+          'Necesitamos acceso a la cámara para escanear documentos.',
+          [
+            { text: 'Cancelar', onPress: () => { if (router.canGoBack()) router.back(); } },
+            { text: 'Abrir configuración', onPress: () => Linking.openSettings() }
+          ]
+        );
+        return;
+      }
+
+      const resultado = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        quality: 0.9,
+        allowsEditing: false,
+        exif: false,
+      });
+
+      if (!isMountedRef.current) return;
+
+      if (!resultado.canceled && resultado.assets[0]) {
+        router.replace({
+          pathname: '/escaner-preview',
+          params: {
+            imageUri: resultado.assets[0].uri,
+            existingPages: JSON.stringify(existingPages),
+            fromIndicator: params.fromIndicator || '',
+            indicatorName: params.indicatorName || '',
+            criterio: params.criterio || '',
+            year: params.year || '',
+            breadcrumb: params.breadcrumb || '',
+          },
+        });
+      } else {
+        if (router.canGoBack()) {
+          router.back();
+        }
+      }
+    } catch (error) {
+      console.warn('Error al abrir la cámara iOS:', error);
+      if (isMountedRef.current && router.canGoBack()) {
+        router.back();
+      }
+    }
+  };
+
+
+  useEffect(() => {
+    if (isWeb || Platform.OS === 'ios') return;
 
     const pedirPermisos = async () => {
       try {
-        if (Platform.OS === 'ios') {
-          const resultado = await requestPermission();
-          if (!resultado.granted) {
-            setPermissionDenied(true);
-          }
-        } else {
-          const { status } = await Camera.requestCameraPermissionsAsync();
-          if (status !== 'granted') {
-            setPermissionDenied(true);
-          }
+        const { status } = await Camera.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+          setPermissionDenied(true);
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : 'No se pudo solicitar el permiso de cámara.';
@@ -82,7 +143,7 @@ export default function EscanerScreen() {
     };
 
     pedirPermisos();
-  }, [isWeb, requestPermission]);
+  }, [isWeb]);
 
   const cycleFlash = () => {
     const currentIndex = FLASH_CYCLE.indexOf(flashMode);
@@ -113,17 +174,15 @@ export default function EscanerScreen() {
 
     try {
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.9,
+        quality: 0.7,
         base64: false,
-        skipProcessing: true,
-        exif: false,
       });
 
       if (photo?.uri) {
         navigateToPreview(photo.uri);
       }
     } catch (error) {
-      if (Platform.OS === 'ios' && error instanceof Error && error.message.includes('unmounted')) {
+      if (Platform.OS === 'ios') {
         try {
           const resultado = await ImagePicker.launchCameraAsync({
             mediaTypes: ['images'],
@@ -199,6 +258,10 @@ export default function EscanerScreen() {
       }}
     />
   ), [flashMode]);
+
+  if (Platform.OS === 'ios') {
+    return <View style={{ flex: 1, backgroundColor: '#000' }} />;
+  }
 
   if (isWeb || permissionDenied || mensajeError) {
     return (
