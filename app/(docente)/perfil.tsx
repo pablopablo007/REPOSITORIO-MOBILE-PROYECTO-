@@ -10,6 +10,7 @@ import { useData } from '../../contexts/DataContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import * as ImagePicker from 'expo-image-picker';
+import { SERVER_BASE_URL } from '../../services/api';
 
 export default function PerfilScreen() {
   const router = useRouter();
@@ -137,7 +138,10 @@ export default function PerfilScreen() {
           <View style={styles.avatarContainer}>
             <TouchableOpacity onPress={pickImage} activeOpacity={isEditing ? 0.7 : 1}>
               {avatarUri ? (
-                <Image source={{ uri: avatarUri }} style={styles.avatarImg} />
+                <Image 
+                  source={{ uri: avatarUri.startsWith('file') ? avatarUri : `${SERVER_BASE_URL}${avatarUri}` }} 
+                  style={styles.avatarImg} 
+                />
               ) : (
                 <View style={styles.avatarPlaceholder}>
                   <Text style={styles.avatarInitials}>{user?.initials || '??'}</Text>

@@ -283,6 +283,7 @@ ${imagenes.map(src => `<div class="pagina"><img src="${src}"/></div>`).join('\n'
         badgeColor: '#2563eb',
         paginas: pages.length,
         uri: uriFinal,
+        fileUri: uriFinal,
         tamaño: pdfTamaño,
         fecha: new Date().toISOString(),
         date: new Date().toISOString(),
@@ -299,10 +300,10 @@ ${imagenes.map(src => `<div class="pagina"><img src="${src}"/></div>`).join('\n'
         tareaTitulo: tareaSeleccionada !== 'ninguna' ? nombreTareaSeleccionada : undefined,
       };
 
-      await uploadEvidence(nuevaEvidencia as any);
+      const serverEvidenceId = await uploadEvidence(nuevaEvidencia as any);
 
       if (tareaSeleccionada && tareaSeleccionada !== 'ninguna') {
-        await completeTask(tareaSeleccionada, nuevaEvidencia.id);
+        await completeTask(tareaSeleccionada, serverEvidenceId);
 
         Toast.show({
           type: 'success',

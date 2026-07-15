@@ -8,9 +8,12 @@ export default function IndexScreen() {
 
   useEffect(() => {
     const init = async () => {
-      // Siempre limpiar sesión al abrir la app - forzar login
-      await AsyncStorage.removeItem('@user');
-      router.replace('/login');
+      const token = await AsyncStorage.getItem('@auth_token');
+      if (token) {
+        router.replace('/(docente)');
+      } else {
+        router.replace('/login');
+      }
     };
     init();
   }, []);

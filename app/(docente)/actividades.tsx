@@ -15,11 +15,7 @@ export default function ActividadesScreen() {
   const { tasks, uploadEvidence, completeTask, evidences } = useData();
   const router = useRouter();
 
-  const [iaModalVisible, setIaModalVisible] = useState(false);
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const [iaDescription, setIaDescription] = useState('');
-  const [iaType, setIaType] = useState('Informe');
-  const [isGenerating, setIsGenerating] = useState(false);
+
 
   const pendingTasks = tasks.filter(t => !t.completed).sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
   const completedTasks = tasks.filter(t => t.completed).sort((a, b) => new Date(b.deadline).getTime() - new Date(a.deadline).getTime());
@@ -35,6 +31,7 @@ export default function ActividadesScreen() {
           documentType: documentType as any,
           periodo: '2025',
           fileName: file.name,
+          fileUri: file.uri,
           description: `Subido para: ${taskTitle}`,
         });
         await completeTask(taskId, evidenceId);
@@ -45,38 +42,6 @@ export default function ActividadesScreen() {
     }
   };
 
-  const handleIA = (taskId: string) => {
-    setSelectedTaskId(taskId);
-    setIaModalVisible(true);
-  };
-
-  const confirmGenerateIA = () => {
-    if (!selectedTaskId) return;
-    setIsGenerating(true);
-    
-    setTimeout(async () => {
-      const task = tasks.find(t => t.id === selectedTaskId);
-      if (task) {
-        const generatedName = `${task.title.replace(/\s+/g, '_')}_IA.pdf`;
-        const evidenceId = await uploadEvidence({
-          docenteId: '1',
-          docenteName: 'Prof. Pablo Mora',
-          documentType: 'Generado con IA',
-          periodo: '2025',
-          fileName: generatedName,
-          description: iaDescription || `Generado por IA para: ${task.title}`,
-          iaGenerated: true,
-        });
-        await completeTask(selectedTaskId, evidenceId);
-        Toast.show({ type: 'success', text1: 'Documento generado ✓' });
-      }
-      setIsGenerating(false);
-      setIaModalVisible(false);
-      setIaDescription('');
-    }, 2000);
-  };
-
-  const selectedTask = tasks.find(t => t.id === selectedTaskId);
 
   return (
     <View style={styles.container}>
@@ -132,15 +97,7 @@ export default function ActividadesScreen() {
                   <Text style={styles.actionBtnText}>Escanear</Text>
                 </TouchableOpacity>
                 
-                <View style={styles.divider} />
 
-                <TouchableOpacity style={styles.actionBtn} onPress={() => handleIA(task.id)}>
-                  <MaterialIcons name="auto-awesome" size={18} color="#7c3aed" />
-                  <Text style={styles.actionBtnTextIA}>IA</Text>
-                  <View style={styles.betaBadge}>
-                    <Text style={styles.betaText}>BETA</Text>
-                  </View>
-                </TouchableOpacity>
               </View>
             </View>
           );
@@ -178,66 +135,7 @@ export default function ActividadesScreen() {
 
       </ScrollView>
 
-      {/* MODAL IA */}
-      <Modal visible={iaModalVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity style={styles.modalBackdrop} onPress={() => !isGenerating && setIaModalVisible(false)} />
-          <View style={styles.bottomSheet}>
-            <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>✨ Generar documento con IA</Text>
-            <View style={styles.sheetBadge}>
-              <Text style={styles.sheetBadgeText}>BETA</Text>
-            </View>
 
-            <Text style={styles.label}>Tarea vinculada:</Text>
-            <Text style={styles.taskValue}>&quot;{selectedTask?.title}&quot;</Text>
-
-            <Text style={styles.label}>Describe lo que necesitas:</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ej: certificado de estudios de posgrado firmado..."
-              multiline
-              value={iaDescription}
-              onChangeText={setIaDescription}
-              editable={!isGenerating}
-            />
-
-            <View style={styles.row}>
-              <View style={styles.half}>
-                <Text style={styles.label}>Tipo:</Text>
-                <View style={styles.pillBox}>
-                  <Text style={styles.pillText}>{iaType} ▾</Text>
-                </View>
-              </View>
-              <View style={styles.half}>
-                <Text style={styles.label}>Formato:</Text>
-                <View style={styles.formatRow}>
-                  <View style={[styles.pillBox, styles.pillActive]}><Text style={styles.pillActiveText}>PDF</Text></View>
-                  <View style={styles.pillBox}><Text style={styles.pillText}>DOCX</Text></View>
-                </View>
-              </View>
-            </View>
-
-            <TouchableOpacity 
-              style={[styles.primaryBtn, isGenerating && styles.primaryBtnDisabled]}
-              onPress={confirmGenerateIA}
-              disabled={isGenerating}
-            >
-              {isGenerating ? (
-                <Text style={styles.btnText}>Generando con IA...</Text>
-              ) : (
-                <Text style={styles.btnText}>✨ Generar y guardar</Text>
-              )}
-            </TouchableOpacity>
-
-            {!isGenerating && (
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setIaModalVisible(false)}>
-                <Text style={styles.cancelBtnText}>Cancelar</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }

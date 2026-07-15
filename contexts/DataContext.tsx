@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 import { BadgeStatus } from '../components/Badge';
+import api from '../services/api';
+import { SERVER_BASE_URL } from '../services/api';
 
 export type DocumentType =
   | 'Académico'
@@ -19,6 +20,7 @@ export interface Evidence {
   documentType: DocumentType;
   periodo: string;
   fileName: string;
+  fileUrl?: string;
   date: string;
   status: BadgeStatus;
   comment?: string;
@@ -38,6 +40,8 @@ export interface EvidenceDraft {
   description?: string;
   iaGenerated?: boolean;
   scanned?: boolean;
+  fileUri?: string; // For FormData
+  taskId?: string; // Link to task if applicable
   [key: string]: any;
 }
 
@@ -73,184 +77,60 @@ interface DataContextData {
   deleteEvidence: (id: string) => Promise<void>;
   markNotificationRead: (id: string) => Promise<void>;
   completeTask: (taskId: string, evidenceId: string) => Promise<void>;
+  loadData: () => Promise<void>;
   clearData: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextData>({} as DataContextData);
 
-const SEED_NOTIFICATIONS: Notification[] = [
-  {
-    id: 'seed-1',
-    userId: '1',
-    title: 'Documento observado',
-    message: "Tu documento 'Acta_Reunion_Marzo.docx' fue observado. Comentario: Falta firma del director.",
-    date: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-    read: false,
-    type: 'warning',
-  },
-  {
-    id: 'seed-2',
-    userId: '1',
-    title: 'Nueva actividad asignada',
-    message: "Certificado de capacitación",
-    date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    read: false,
-    type: 'info',
-  },
-  {
-    id: 'seed-3',
-    userId: '1',
-    title: 'Documento validado',
-    message: "Tu documento 'Titulo_Posgrado.pdf' fue validado por RRHH.",
-    date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    read: true,
-    type: 'success',
-  },
-];
-
-const daysFromNow = (days: number) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
-const specificDate = (y: number, m: number, d: number) => new Date(y, m - 1, d).toISOString();
-
-const SEED_TASKS: Task[] = [
-  {
-    id: 'task-1',
-    docenteId: '1',
-    title: 'Subir título de cuarto nivel',
-    description: 'Sube tu título de maestría en PDF firmado y sellado',
-    deadline: daysFromNow(2),
-    documentType: 'Título/Certificado',
-    completed: false,
-  },
-  {
-    id: 'task-2',
-    docenteId: '1',
-    title: 'Syllabus período 2025',
-    description: 'Sube el syllabus de todas tus materias actualizadas',
-    deadline: daysFromNow(6),
-    documentType: 'Académico',
-    completed: false,
-  },
-  {
-    id: 'task-3',
-    docenteId: '1',
-    title: 'Certificado de capacitación docente',
-    description: 'Sube certificados de cursos realizados',
-    deadline: daysFromNow(10),
-    documentType: 'Título/Certificado',
-    completed: false,
-  },
-];
-
-const SEED_EVIDENCES: Evidence[] = [
-  {
-    id: 'doc-acad-1',
-    docenteId: '1',
-    docenteName: 'Prof. Pablo Mora',
-    documentType: 'Académico',
-    periodo: '2024',
-    fileName: 'Syllabus_Biologia_2024.pdf',
-    date: specificDate(2025, 3, 15),
-    status: 'Validado',
-  },
-  {
-    id: 'doc-cert-1',
-    docenteId: '1',
-    docenteName: 'Prof. Pablo Mora',
-    documentType: 'Título/Certificado',
-    periodo: '2025',
-    fileName: 'Titulo_Maestria.pdf',
-    date: specificDate(2025, 5, 20),
-    status: 'Pendiente',
-    scanned: true,
-  },
-  {
-    id: 'doc-acta-1',
-    docenteId: '1',
-    docenteName: 'Prof. Pablo Mora',
-    documentType: 'Acta',
-    periodo: '2025',
-    fileName: 'Acta_Reunion_Marzo.docx',
-    date: specificDate(2025, 3, 15),
-    status: 'Observado',
-    comment: 'Falta firma del director',
-  },
-];
-
-const normalizeEvidence = (evidence: Evidence): Evidence => {
-  const docType = (evidence.documentType || evidence.tipo || (evidence.iaGenerated || evidence.origen === 'ia' ? 'Generado con IA' : 'Académico')) as DocumentType;
-  const status = (evidence.status || evidence.estado || 'Pendiente') as BadgeStatus;
-  const fileName = evidence.fileName || evidence.nombre || 'Sin_nombre.pdf';
-  const date = evidence.date || evidence.fecha || new Date().toISOString();
-  const scanned = evidence.scanned || evidence.origen === 'escaneado';
-  const iaGenerated = evidence.iaGenerated || evidence.origen === 'ia';
-  const docenteId = evidence.docenteId || '1';
-  const docenteName = evidence.docenteName || evidence.subidoPor || 'Prof. Pablo Mora';
-
-  return {
-    ...evidence,
-    id: evidence.id || Date.now().toString(),
-    docenteId,
-    docenteName,
-    subidoPor: docenteName,
-    documentType: docType,
-    tipo: docType,
-    periodo: evidence.periodo || '2025',
-    fileName,
-    nombre: fileName,
-    date,
-    fecha: date,
-    status,
-    estado: status,
-    scanned,
-    iaGenerated,
-    origen: scanned ? 'escaneado' : iaGenerated ? 'ia' : 'subido',
-  };
+// Convierte fileUrl relativa (/uploads/...) a URL absoluta del servidor
+const buildFullFileUrl = (fileUrl?: string | null): string | undefined => {
+  if (!fileUrl) return undefined;
+  if (fileUrl.startsWith('http')) return fileUrl; // Ya es absoluta
+  return `${SERVER_BASE_URL}${fileUrl}`; // /uploads/file.pdf → http://server:3000/uploads/file.pdf
 };
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const [evidences, setEvidences] = useState<Evidence[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { user } = useAuth();
 
-  const unreadCount = notifications.filter(n => n.userId === user?.id && !n.read).length;
-
   useEffect(() => {
-    loadData();
+    if (user?.id) {
+      loadData();
+    } else {
+      setEvidences([]);
+      setNotifications([]);
+      setTasks([]);
+      setUnreadCount(0);
+    }
   }, [user?.id]); 
 
   const loadData = async () => {
     try {
-      const userId = user?.id || '1';
-      const userEvidencesKey = `@evidencias_${userId}`;
-      const storedEvidences = await AsyncStorage.getItem(userEvidencesKey) || await AsyncStorage.getItem('@evidences');
-      const storedNotifications = await AsyncStorage.getItem('@notifications');
-      const storedTasks = await AsyncStorage.getItem('@tasks');
+      setIsLoading(true);
+      
+      const [evidencesRes, tasksRes, notifsRes, unreadRes] = await Promise.all([
+        api.get('/evidences').catch(() => ({ success: false, data: { evidences: [] } })),
+        api.get('/tasks').catch(() => ({ success: false, data: { tasks: [] } })),
+        api.get('/notifications').catch(() => ({ success: false, data: { notifications: [] } })),
+        api.get('/notifications/unread-count').catch(() => ({ success: false, data: { count: 0 } }))
+      ]);
 
-      if (storedEvidences) {
-        const parsedEvidences = JSON.parse(storedEvidences).map(normalizeEvidence);
-        setEvidences(parsedEvidences);
-        await saveData(userEvidencesKey, parsedEvidences);
-      } else {
-        const normalizedSeed = SEED_EVIDENCES.map(normalizeEvidence);
-        setEvidences(normalizedSeed);
-        await saveData(userEvidencesKey, normalizedSeed);
+      if (evidencesRes.success) {
+        const mapped = evidencesRes.data.evidences.map((e: Evidence) => ({
+          ...e,
+          fileUrl: buildFullFileUrl(e.fileUrl),
+        }));
+        setEvidences(mapped);
       }
-
-      if (storedNotifications) {
-        setNotifications(JSON.parse(storedNotifications));
-      } else {
-        setNotifications(SEED_NOTIFICATIONS);
-        await saveData('@notifications', SEED_NOTIFICATIONS);
-      }
-
-      if (storedTasks) {
-        setTasks(JSON.parse(storedTasks));
-      } else {
-        setTasks(SEED_TASKS);
-        await saveData('@tasks', SEED_TASKS);
-      }
+      if (tasksRes.success) setTasks(tasksRes.data.tasks);
+      if (notifsRes.success) setNotifications(notifsRes.data.notifications);
+      if (unreadRes.success) setUnreadCount(unreadRes.data.count);
+      
     } catch (e) {
       console.error('Failed to load data', e);
     } finally {
@@ -258,92 +138,103 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const saveData = async (key: string, data: any) => {
+  const uploadEvidence = async (evidenceData: EvidenceDraft): Promise<string> => {
     try {
-      await AsyncStorage.setItem(key, JSON.stringify(data));
-    } catch (e) {
-      console.error(`Failed to save ${key}`, e);
+      const formData = new FormData();
+      
+      formData.append('documentType', evidenceData.documentType);
+      formData.append('periodo', evidenceData.periodo);
+      formData.append('fileName', evidenceData.fileName);
+      
+      if (evidenceData.description) formData.append('description', evidenceData.description);
+      if (evidenceData.iaGenerated) formData.append('iaGenerated', String(evidenceData.iaGenerated));
+      if (evidenceData.scanned) formData.append('scanned', String(evidenceData.scanned));
+      if (evidenceData.taskId) formData.append('taskId', evidenceData.taskId);
+
+      if (evidenceData.fileUri) {
+         const filename = evidenceData.fileUri.split('/').pop() || evidenceData.fileName;
+         const match = /\.(\w+)$/.exec(filename);
+         const type = match ? (match[1].toLowerCase() === 'pdf' ? 'application/pdf' : `image/${match[1]}`) : `application/pdf`;
+         
+         formData.append('file', {
+            uri: evidenceData.fileUri,
+            name: filename,
+            type
+         } as any);
+      }
+
+      const res = await api.post('/evidences', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      if (res.success) {
+        const uploaded = {
+          ...res.data.evidence,
+          fileUrl: buildFullFileUrl(res.data.evidence.fileUrl),
+        };
+        console.log('[uploadEvidence] Backend returned evidence:', uploaded.id, 'fileUrl:', uploaded.fileUrl);
+        setEvidences([uploaded, ...evidences]);
+        return uploaded.id;
+      }
+      console.log('[uploadEvidence] Failed, returning empty string');
+      return '';
+    } catch (error) {
+       console.error("Error al subir evidencia:", error);
+       throw error;
     }
   };
 
-  const uploadEvidence = async (evidenceData: EvidenceDraft): Promise<string> => {
-    const newId = evidenceData.id || Date.now().toString();
-    const newEvidence = normalizeEvidence({
-      ...evidenceData,
-      id: newId,
-    } as any);
-    const updated = [newEvidence, ...evidences];
-    setEvidences(updated);
-    
-    const userId = user?.id || '1';
-    await saveData(`@evidencias_${userId}`, updated);
-    await saveData('@evidences', updated);
-    return newId;
-  };
-
   const completeTask = useCallback(async (taskId: string, evidenceId: string) => {
-    setTasks(current => {
-      const updated = current.map(t =>
-        t.id === taskId ? { ...t, completed: true, completedEvidenceId: evidenceId } : t
-      );
-      saveData('@tasks', updated);
-      return updated;
-    });
+    try {
+      const res = await api.put(`/tasks/${taskId}/complete`, { evidenceId });
+      if (res.success) {
+        setTasks(current => 
+          current.map(t =>
+            t.id === taskId ? { ...t, completed: true, completedEvidenceId: evidenceId } : t
+          )
+        );
+      }
+    } catch (error) {
+       console.error("Error al completar tarea:", error);
+    }
   }, []);
 
   const reviewEvidence = async (id: string, status: BadgeStatus, comment?: string) => {
-    const updated = evidences.map(e => (e.id === id ? normalizeEvidence({ ...e, status, comment }) : e));
-    setEvidences(updated);
-    
-    const userId = user?.id || '1';
-    await saveData(`@evidencias_${userId}`, updated);
-    await saveData('@evidences', updated);
-
-    const evidence = evidences.find(e => e.id === id);
-    if (evidence) {
-      const newNotif: Notification = {
-        id: Date.now().toString(),
-        userId: evidence.docenteId,
-        title: status === 'Validado' ? 'Documento validado' : 'Tu archivo fue observado',
-        message: status === 'Validado'
-          ? `Tu documento ${evidence.fileName} ha sido validado.`
-          : `Tu documento ${evidence.fileName} tiene observaciones: ${comment}`,
-        date: new Date().toISOString(),
-        read: false,
-        type: status === 'Validado' ? 'success' : 'warning',
-      };
-      const updatedNotifs = [newNotif, ...notifications];
-      setNotifications(updatedNotifs);
-      await saveData('@notifications', updatedNotifs);
+    try {
+      const res = await api.put(`/evidences/${id}/review`, { status, comment });
+      if (res.success) {
+         setEvidences(evidences.map(e => e.id === id ? res.data.evidence : e));
+         loadData();
+      }
+    } catch (error) {
+      console.error("Error revisando evidencia:", error);
     }
   };
 
   const deleteEvidence = async (id: string) => {
-    const updated = evidences.filter(e => e.id !== id);
-    setEvidences(updated);
-    const userId = user?.id || '1';
-    await saveData(`@evidencias_${userId}`, updated);
-    await saveData('@evidences', updated);
+    try {
+      const res = await api.delete(`/evidences/${id}`);
+      if (res.success) {
+         setEvidences(evidences.filter(e => e.id !== id));
+      }
+    } catch (error) {
+       console.error("Error eliminando evidencia:", error);
+    }
   };
 
   const markNotificationRead = async (id: string) => {
-    const updated = notifications.map(n => (n.id === id ? { ...n, read: true } : n));
-    setNotifications(updated);
-    await saveData('@notifications', updated);
+    try {
+      const res = await api.put(`/notifications/${id}/read`);
+      if (res.success) {
+         setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
+         setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+    } catch (error) {
+       console.error("Error marcando notif como leída:", error);
+    }
   };
 
-  const clearData = async () => {
-    const normalizedSeed = SEED_EVIDENCES.map(normalizeEvidence);
-    setEvidences(normalizedSeed);
-    setNotifications(SEED_NOTIFICATIONS);
-    setTasks(SEED_TASKS);
-    const userId = user?.id || '1';
-    await AsyncStorage.multiRemove([`@evidencias_${userId}`, '@evidences', '@notifications', '@tasks']);
-    await saveData(`@evidencias_${userId}`, normalizedSeed);
-    await saveData('@evidences', normalizedSeed);
-    await saveData('@notifications', SEED_NOTIFICATIONS);
-    await saveData('@tasks', SEED_TASKS);
-  };
+  const clearData = async () => {};
 
   return (
     <DataContext.Provider value={{
@@ -357,6 +248,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       deleteEvidence,
       markNotificationRead,
       completeTask,
+      loadData,
       clearData,
     }}>
       {children}
@@ -367,4 +259,3 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 export function useData() {
   return useContext(DataContext);
 }
-

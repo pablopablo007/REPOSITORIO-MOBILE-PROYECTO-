@@ -64,6 +64,19 @@ export default function DocenteDashboard() {
     return [...myEvidences].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
   }, [myEvidences]);
 
+  const getFileIconData = (fileName: string) => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    if (ext === 'pdf') return { color: '#dc2626', icon: 'document-text' as const };
+    if (ext === 'doc' || ext === 'docx') return { color: '#2563eb', icon: 'document' as const };
+    return { color: '#16a34a', icon: 'image' as const };
+  };
+
+  const getStatusColor = (status: string) => {
+    if (status === 'Validado') return '#15803d';
+    if (status === 'Observado') return '#dc2626';
+    return '#d97706';
+  };
+
   const firstName = user?.name?.split(' ')[0] || 'Prof.';
   const lastName = user?.name?.split(' ')[1] || 'Pablo';
 
@@ -140,13 +153,20 @@ export default function DocenteDashboard() {
               activeOpacity={0.8}
               onPress={() => router.push('/(docente)/archivos')}
             >
-              <Ionicons name="document-text" size={24} color="#dc2626" />
+              <Ionicons 
+                name={getFileIconData(ultimoArchivo.fileName).icon} 
+                size={24} 
+                color={getFileIconData(ultimoArchivo.fileName).color} 
+              />
               <View style={styles.lastFileInfo}>
                 <Text style={styles.lastFileTitle} numberOfLines={1}>{ultimoArchivo.fileName}</Text>
                 <Text style={styles.lastFileMeta}>
-                  {getDaysAgo(ultimoArchivo.date)}  •  {ultimoArchivo.status}
+                  {getDaysAgo(ultimoArchivo.date)}  •  <Text style={{ color: getStatusColor(ultimoArchivo.status), fontWeight: '600' }}>{ultimoArchivo.status}</Text>
                 </Text>
               </View>
+              {ultimoArchivo.fileUrl && (
+                <Ionicons name="cloud-done" size={18} color="#16a34a" style={{ marginLeft: 8 }} />
+              )}
             </TouchableOpacity>
           </>
         )}

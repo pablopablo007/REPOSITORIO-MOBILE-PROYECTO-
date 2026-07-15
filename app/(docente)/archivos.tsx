@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Modal, Animated, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Modal, Animated, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Evidence, useData } from '../../contexts/DataContext';
@@ -7,9 +7,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import * as DocumentPicker from 'expo-document-picker';
 import Toast from 'react-native-toast-message';
 import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system/legacy';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-type StatusFilter = 'Todos' | 'Pendiente' | 'Validado' | 'Observado' | 'Escaneado' | 'Con IA';
-const FILTERS: StatusFilter[] = ['Todos', 'Pendiente', 'Validado', 'Observado', 'Escaneado', 'Con IA'];
+type StatusFilter = 'Todos' | 'Pendiente' | 'Validado' | 'Observado' | 'Escaneado';
+const FILTERS: StatusFilter[] = ['Todos', 'Pendiente', 'Validado', 'Observado', 'Escaneado'];
 
 export default function ArchivosScreen() {
   const { evidences, deleteEvidence, uploadEvidence } = useData();
@@ -23,25 +25,118 @@ export default function ArchivosScreen() {
   const fabAnim = useRef(new Animated.Value(0)).current;
   const fabRotation = useRef(new Animated.Value(0)).current;
 
-  // IA Modal
-  const [iaModalVisible, setIaModalVisible] = useState(false);
-  const [iaDescription, setIaDescription] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
+
 
   // Preview Modal
   const [modalVisible, setModalVisible] = useState(false);
   const [archivoSeleccionado, setArchivoSeleccionado] = useState<Evidence | null>(null);
 
+  // Download state
+  const [descargandoId, setDescargandoId] = useState<string | null>(null);
+
+  // Long press context menu
+  const [menuDocId, setMenuDocId] = useState<string | null>(null);
+
   const previsualizarArchivo = async (doc: Evidence) => {
-    if (doc.uri && doc.uri.startsWith('file://')) {
+    const ext = doc.fileName.split('.').pop()?.toLowerCase();
+    const isPdf = ext === 'pdf';
+
+    // ── Para PDFs: abrir en el visor interno ──
+    if (isPdf) {
       try {
-        await Sharing.shareAsync(doc.uri);
-      } catch (e) {
-        Toast.show({ type: 'error', text1: 'Error al abrir el archivo' });
+        setDescargandoId(doc.id);
+
+        // Si tiene URI local y el archivo existe, usarlo
+        const localUri = doc.uri || (doc as any).uriLocal;
+        if (localUri && localUri.startsWith('file://')) {
+          const info = await FileSystem.getInfoAsync(localUri);
+          if (info.exists) {
+            setDescargandoId(null);
+            router.push({
+              pathname: '/visor-pdf',
+              params: { uri: localUri, title: doc.fileName },
+            });
+            return;
+          }
+        }
+
+        // Si tiene URL del backend
+        if (doc.fileUrl) {
+          setDescargandoId(null);
+          // fileUrl puede venir como URL completa o como ruta relativa
+          const { SERVER_BASE_URL } = require('../../services/api');
+          const fullUrl = doc.fileUrl.startsWith('http') ? doc.fileUrl : `${SERVER_BASE_URL}${doc.fileUrl}`;
+          router.push({
+            pathname: '/visor-pdf',
+            params: { remoteUrl: fullUrl, title: doc.fileName },
+          });
+          return;
+        }
+
+        // Fallback: mostrar modal de detalles
+        setDescargandoId(null);
+        setArchivoSeleccionado(doc);
+        setModalVisible(true);
+      } catch (error) {
+        setDescargandoId(null);
+        Alert.alert('Error', 'No se pudo abrir el archivo.');
       }
-    } else {
+      return;
+    }
+
+    // ── Para archivos NO-PDF: mantener comportamiento original (Sharing) ──
+    try {
+      setDescargandoId(doc.id);
+
+      // 1. Si tiene URI local y el archivo existe, abrirlo directamente
+      const localUri = doc.uri || (doc as any).uriLocal;
+      if (localUri && localUri.startsWith('file://')) {
+        const info = await FileSystem.getInfoAsync(localUri);
+        if (info.exists) {
+          await Sharing.shareAsync(localUri, {
+            mimeType: 'application/pdf',
+            dialogTitle: doc.fileName,
+          });
+          setDescargandoId(null);
+          return;
+        }
+      }
+
+      // 2. Si tiene URL del backend, descargar al dispositivo y abrir
+      if (doc.fileUrl) {
+        const token = await AsyncStorage.getItem('@auth_token');
+        const destino = FileSystem.cacheDirectory + doc.fileName;
+
+        const downloadOptions: FileSystem.DownloadOptions = {};
+        if (token) {
+          downloadOptions.headers = { Authorization: `Bearer ${token}` };
+        }
+
+        const { uri } = await FileSystem.downloadAsync(
+          doc.fileUrl,
+          destino,
+          downloadOptions
+        );
+
+        const mimeType = (ext === 'doc' || ext === 'docx') ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+          : 'application/octet-stream';
+
+        await Sharing.shareAsync(uri, {
+          mimeType,
+          dialogTitle: doc.fileName,
+        });
+
+        setDescargandoId(null);
+        return;
+      }
+
+      // 3. Fallback: mostrar modal de detalles
+      setDescargandoId(null);
       setArchivoSeleccionado(doc);
       setModalVisible(true);
+    } catch (error) {
+      setDescargandoId(null);
+      Alert.alert('Error', 'No se pudo abrir el archivo. Verifica tu conexión a internet.');
     }
   };
   const myEvidences = useMemo(() => evidences.filter(e => e.docenteId === user?.id), [evidences, user?.id]);
@@ -79,11 +174,12 @@ export default function ArchivosScreen() {
       if (!result.canceled && result.assets.length > 0) {
         const file = result.assets[0];
         await uploadEvidence({
-          docenteId: '1',
-          docenteName: 'Prof. Pablo Mora',
+          docenteId: user?.id || '1',
+          docenteName: user?.name || 'Prof. Pablo Mora',
           documentType: 'Otro',
           periodo: '2025',
           fileName: file.name,
+          fileUri: file.uri,
         });
         Toast.show({ type: 'success', text1: 'Archivo subido correctamente' });
       }
@@ -96,15 +192,16 @@ export default function ArchivosScreen() {
     try {
       const result = await DocumentPicker.getDocumentAsync();
       if (!result.canceled && result.assets.length > 0) {
-        // En una app real esto actualizaría la evidencia
+        // Eliminar la evidencia anterior y subir la corrección
         deleteEvidence(docId);
         const file = result.assets[0];
         await uploadEvidence({
-          docenteId: '1',
-          docenteName: 'Prof. Pablo Mora',
+          docenteId: user?.id || '1',
+          docenteName: user?.name || 'Prof. Pablo Mora',
           documentType: 'Otro',
           periodo: '2025',
           fileName: file.name,
+          fileUri: file.uri,
         });
         Toast.show({ type: 'success', text1: 'Archivo corregido subido correctamente' });
       }
@@ -131,25 +228,7 @@ export default function ArchivosScreen() {
     );
   };
 
-  const confirmGenerateIA = () => {
-    setIsGenerating(true);
-    setTimeout(async () => {
-      const generatedName = `Documento_Generado_IA_${Date.now()}.pdf`;
-      await uploadEvidence({
-        docenteId: '1',
-        docenteName: 'Prof. Pablo Mora',
-        documentType: 'Generado con IA',
-        periodo: '2025',
-        fileName: generatedName,
-        description: iaDescription,
-        iaGenerated: true,
-      });
-      setIsGenerating(false);
-      setIaModalVisible(false);
-      setIaDescription('');
-      Toast.show({ type: 'success', text1: 'Documento generado ✓' });
-    }, 2000);
-  };
+
 
   const getFileIconData = (fileName: string) => {
     const ext = fileName.split('.').pop()?.toLowerCase();
@@ -159,9 +238,20 @@ export default function ArchivosScreen() {
   };
 
   const getStatusData = (status: string) => {
-    if (status === 'Validado') return { color: '#15803d', text: 'Validado', icon: 'checkmark-circle' };
-    if (status === 'Observado') return { color: '#dc2626', text: 'Requiere corrección', icon: 'alert-circle' };
-    return { color: '#d97706', text: 'Pendiente de validación', icon: 'time' };
+    if (status === 'Validado') return { color: '#15803d', bg: '#dcfce7', text: 'Validado', icon: 'checkmark-circle' };
+    if (status === 'Observado') return { color: '#dc2626', bg: '#fef2f2', text: 'Observado', icon: 'alert-circle' };
+    return { color: '#d97706', bg: '#fef9c3', text: 'Pendiente', icon: 'time' };
+  };
+
+  // Determina el estado de sincronización del archivo
+  const getSyncStatus = (doc: Evidence) => {
+    const hasRemoteUrl = !!doc.fileUrl;
+    const hasLocalUri = !!(doc.uri || (doc as any).uriLocal);
+
+    if (hasRemoteUrl && hasLocalUri) return { icon: 'cloud-done', color: '#16a34a', label: 'Sincronizado' };
+    if (hasRemoteUrl) return { icon: 'cloud-done', color: '#16a34a', label: 'En servidor' };
+    if (hasLocalUri) return { icon: 'cloud-upload', color: '#9ca3af', label: 'Solo local' };
+    return { icon: 'cloud-done', color: '#16a34a', label: 'Subido' };
   };
 
   const renderDoc = (doc: Evidence) => {
@@ -169,72 +259,92 @@ export default function ArchivosScreen() {
     const statusData = getStatusData(doc.status);
     const isScanned = doc.scanned || doc.origen === 'escaneado';
     const isIA = doc.iaGenerated || doc.origen === 'ia';
+    const syncStatus = getSyncStatus(doc);
+    const isDownloading = descargandoId === doc.id;
+    const isMenuOpen = menuDocId === doc.id;
 
-    let leftBorderColor = '#3b82f6'; // Azul por defecto (Pendiente)
+    let leftBorderColor = '#3b82f6';
     if (doc.status === 'Validado') leftBorderColor = '#15803d';
     if (doc.status === 'Observado') leftBorderColor = '#dc2626';
 
     return (
-      <TouchableOpacity 
-        key={doc.id} 
-        activeOpacity={0.8}
-        onPress={() => previsualizarArchivo(doc)}
-      >
-        <View style={[styles.docCard, { borderLeftColor: leftBorderColor }]}>
-        {/* Esquina superior origen */}
-        {(isScanned || isIA) && (
-          <View style={styles.badgeCorner}>
-            <Text style={styles.badgeCornerText}>{isIA ? '✨' : '📷'}</Text>
+      <View key={doc.id}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => { setMenuDocId(null); previsualizarArchivo(doc); }}
+          onLongPress={() => setMenuDocId(isMenuOpen ? null : doc.id)}
+          disabled={isDownloading}
+        >
+          <View style={[styles.docCard, { borderLeftColor: leftBorderColor }]}>
+            <View style={styles.docRow}>
+              {/* Ícono tipo de archivo */}
+              <View style={[styles.typeIconBox, { backgroundColor: iconData.bg }]}>
+                <Text style={[styles.typeIconLabel, { color: iconData.color }]}>{iconData.text}</Text>
+                <Ionicons name={iconData.icon as any} size={14} color={iconData.color} />
+              </View>
+
+              {/* Info central */}
+              <View style={styles.docInfo}>
+                <View style={styles.docNameRow}>
+                  <Text style={styles.docName} numberOfLines={1}>{doc.fileName}</Text>
+                  {(isScanned || isIA) && (
+                    <Text style={styles.originEmoji}>{isIA ? '✨' : '📷'}</Text>
+                  )}
+                </View>
+                <Text style={styles.docMeta} numberOfLines={1}>
+                  {doc.documentType} • {new Date(doc.date).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                </Text>
+              </View>
+
+              {/* Status badge + sync */}
+              <View style={styles.docRightSection}>
+                <View style={[styles.statusPill, { backgroundColor: statusData.bg }]}>
+                  <Ionicons name={statusData.icon as any} size={12} color={statusData.color} />
+                  <Text style={[styles.statusPillText, { color: statusData.color }]}>{statusData.text}</Text>
+                </View>
+                <View style={styles.syncRow}>
+                  <MaterialIcons name={syncStatus.icon as any} size={12} color={syncStatus.color} />
+                  {isDownloading && (
+                    <ActivityIndicator size="small" color="#2563eb" style={{ marginLeft: 4 }} />
+                  )}
+                </View>
+              </View>
+            </View>
+
+            {/* Observación inline (solo si Observado con comentario) */}
+            {doc.status === 'Observado' && doc.comment && (
+              <View style={styles.obsBox}>
+                <Text style={styles.obsText} numberOfLines={1}>💬 &quot;{doc.comment}&quot;</Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+
+        {/* Menú contextual (long press) */}
+        {isMenuOpen && (
+          <View style={styles.contextMenu}>
+            <TouchableOpacity style={styles.contextMenuItem} onPress={() => { setMenuDocId(null); previsualizarArchivo(doc); }}>
+              <Ionicons name="eye-outline" size={18} color="#2563eb" />
+              <Text style={[styles.contextMenuText, { color: '#2563eb' }]}>Ver archivo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.contextMenuItem} onPress={() => { setMenuDocId(null); Toast.show({ type: 'info', text1: 'Simulando compartir...' }); }}>
+              <Ionicons name="share-outline" size={18} color="#475569" />
+              <Text style={styles.contextMenuText}>Compartir</Text>
+            </TouchableOpacity>
+            {doc.status === 'Observado' ? (
+              <TouchableOpacity style={styles.contextMenuItem} onPress={() => { setMenuDocId(null); handleCorregir(doc.id); }}>
+                <Ionicons name="refresh-outline" size={18} color="#dc2626" />
+                <Text style={[styles.contextMenuText, { color: '#dc2626' }]}>Corregir</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={styles.contextMenuItem} onPress={() => { setMenuDocId(null); confirmDelete(doc.id); }}>
+                <Ionicons name="trash-outline" size={18} color="#dc2626" />
+                <Text style={[styles.contextMenuText, { color: '#dc2626' }]}>Eliminar</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
-
-        <View style={styles.docHeader}>
-          <View style={[styles.typeIconBox, { backgroundColor: iconData.bg }]}>
-            <Text style={[styles.typeIconLabel, { color: iconData.color }]}>{iconData.text}</Text>
-            <Ionicons name={iconData.icon as any} size={16} color={iconData.color} />
-          </View>
-          
-          <View style={styles.docInfo}>
-            <Text style={styles.docName} numberOfLines={1}>{doc.fileName}</Text>
-            <Text style={styles.docMeta}>
-              {doc.documentType} • {new Date(doc.date).toLocaleDateString('es-EC', { day: '2-digit', month: 'short' })}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.docStatusRow}>
-          <Ionicons name={statusData.icon as any} size={14} color={statusData.color} />
-          <Text style={[styles.statusText, { color: statusData.color }]}>{statusData.text}</Text>
-        </View>
-
-        {doc.status === 'Observado' && doc.comment && (
-          <View style={styles.obsBox}>
-            <Text style={styles.obsText}>💬 &quot;{doc.comment}&quot;</Text>
-          </View>
-        )}
-
-        <View style={styles.divider} />
-
-        <View style={styles.actionsRow}>
-          <TouchableOpacity style={styles.actionBtn} onPress={() => Toast.show({ type: 'info', text1: 'Simulando compartir...' })}>
-            <Ionicons name="share-outline" size={18} color="#475569" />
-            <Text style={styles.actionBtnText}>Compartir</Text>
-          </TouchableOpacity>
-
-          {doc.status === 'Observado' ? (
-            <TouchableOpacity style={styles.actionBtn} onPress={() => handleCorregir(doc.id)}>
-              <Ionicons name="refresh-outline" size={18} color="#dc2626" />
-              <Text style={[styles.actionBtnText, { color: '#dc2626' }]}>Corregir</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity style={styles.actionBtn} onPress={() => confirmDelete(doc.id)}>
-              <Ionicons name="trash-outline" size={18} color="#475569" />
-              <Text style={styles.actionBtnText}>Eliminar</Text>
-            </TouchableOpacity>
-          )}
-        </View>
       </View>
-      </TouchableOpacity>
     );
   };
 
@@ -301,7 +411,6 @@ export default function ArchivosScreen() {
       {[
         { label: 'Subir archivo', icon: 'cloud-upload-outline', action: handleSubirDirecto },
         { label: 'Escanear', icon: 'camera-outline', action: () => { setShowFabMenu(false); router.push('/escaner'); } },
-        { label: 'Generar con IA', icon: 'sparkles-outline', action: () => { setShowFabMenu(false); setIaModalVisible(true); } },
       ].map((opt, i) => {
         const translateY = fabAnim.interpolate({
           inputRange: [0, 1],
@@ -328,35 +437,7 @@ export default function ArchivosScreen() {
         </Animated.View>
       </TouchableOpacity>
 
-      {/* Modal IA */}
-      <Modal visible={iaModalVisible} transparent animationType="fade">
-        <View style={styles.sheetOverlay}>
-          <TouchableOpacity style={styles.sheetBackdrop} onPress={() => !isGenerating && setIaModalVisible(false)} />
-          <View style={styles.bottomSheet}>
-            <Text style={styles.iaModalTitle}>✨ Generar con IA</Text>
-            <TextInput
-              style={styles.iaInput}
-              placeholder="¿Qué necesitas que la IA genere?"
-              multiline
-              value={iaDescription}
-              onChangeText={setIaDescription}
-              editable={!isGenerating}
-            />
-            <TouchableOpacity 
-              style={[styles.primaryBtn, isGenerating && { opacity: 0.7 }]}
-              onPress={confirmGenerateIA}
-              disabled={isGenerating}
-            >
-              <Text style={styles.primaryBtnText}>{isGenerating ? 'Generando...' : 'Generar y guardar'}</Text>
-            </TouchableOpacity>
-            {!isGenerating && (
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setIaModalVisible(false)}>
-                <Text style={styles.cancelBtnText}>Cancelar</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      </Modal>
+
 
       {/* Preview Modal */}
       <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => setModalVisible(false)}>
@@ -527,102 +608,115 @@ const styles = StyleSheet.create({
   },
   docCard: {
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 14,
     borderLeftWidth: 4,
-    marginBottom: 16,
-    padding: 16,
+    marginBottom: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-    position: 'relative',
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
-  badgeCorner: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-  },
-  badgeCornerText: {
-    fontSize: 14,
-  },
-  docHeader: {
+  docRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
   },
   typeIconBox: {
-    width: 52,
-    height: 52,
-    borderRadius: 12,
+    width: 42,
+    height: 42,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
   typeIconLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '800',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   docInfo: {
     flex: 1,
-    paddingRight: 16, // Para que no pise el badge
+    marginRight: 10,
+  },
+  docNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   docName: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#0f172a',
-    marginBottom: 4,
+    flexShrink: 1,
+  },
+  originEmoji: {
+    fontSize: 12,
   },
   docMeta: {
-    fontSize: 12,
-    color: '#64748b',
+    fontSize: 11,
+    color: '#94a3b8',
+    marginTop: 2,
   },
-  docStatusRow: {
+  docRightSection: {
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    gap: 3,
   },
-  statusText: {
-    fontSize: 13,
-    fontWeight: '600',
+  statusPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  syncRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   obsBox: {
     marginTop: 8,
     backgroundColor: '#fef2f2',
-    padding: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#fecaca',
   },
   obsText: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#b91c1c',
     fontStyle: 'italic',
   },
-  divider: {
-    height: 1,
-    backgroundColor: '#f1f5f9',
-    marginVertical: 12,
+  contextMenu: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 10,
+    marginTop: -6,
+    marginHorizontal: 4,
+    paddingVertical: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
   },
-  actionsRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  actionBtn: {
-    flex: 1,
+  contextMenuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    backgroundColor: '#f8fafc',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
   },
-  actionBtnText: {
-    fontSize: 13,
+  contextMenuText: {
+    fontSize: 14,
     fontWeight: '600',
     color: '#475569',
   },

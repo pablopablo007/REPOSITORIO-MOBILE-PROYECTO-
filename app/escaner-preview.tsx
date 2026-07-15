@@ -1040,7 +1040,7 @@ export default function EscanerPreviewScreen() {
     { key: 'brillo', icon: 'sunny-outline' as const, label: 'Brillo+', active: brightnessUp, onPress: toggleBrightness },
     { key: 'rotar', icon: 'refresh-outline' as const, label: 'Rotar', active: false, onPress: handleRotate },
     { key: 'manual', icon: 'crop-outline' as const, label: 'Recortar', active: false, onPress: handleManualCrop },
-    { key: 'auto', icon: 'scan-outline' as const, label: 'Auto IA', active: detectando, onPress: procesarMargenes },
+    { key: 'auto', icon: 'scan-outline' as const, label: 'Automático', active: detectando, onPress: procesarMargenes },
     ...(hasChanges ? [{ key: 'revertir', icon: 'arrow-undo-outline' as const, label: 'Revertir', active: false, onPress: handleRevertir }] : []),
   ];
   const cropOverlayPoints = cropCorners && cropBoxSize.width > 0 && cropImageSize.width > 0
