@@ -26,11 +26,13 @@ api.interceptors.request.use(
 
 // Interceptor opcional para manejar expiración de token, etc.
 api.interceptors.response.use(
-  (response) => response.data, // Solo devolvemos la data, asumiendo estructura { success, data: {...} }
+  (response) => response.data as any, // Solo devolvemos la data, asumiendo estructura { success, data: {...} }
   (error) => {
     console.error('API Error:', error.response?.data || error.message);
     return Promise.reject(error.response?.data || { message: 'Error de conexión con el servidor' });
   }
 );
 
-export default api;
+// Override API type to allow success property
+const typedApi = api as any;
+export default typedApi;

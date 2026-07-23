@@ -149,8 +149,8 @@ export default function ArchivosScreen() {
       
       let matchFilter = false;
       if (filter === 'Todos') matchFilter = true;
-      else if (filter === 'Escaneado') matchFilter = isScanned;
-      else if (filter === 'Con IA') matchFilter = isIA;
+      else if ((filter as string) === 'Escaneado') matchFilter = isScanned;
+      else if ((filter as string) === 'Con IA') matchFilter = isIA;
       else matchFilter = doc.status === filter;
 
       return matchSearch && matchFilter;

@@ -17,7 +17,7 @@ export default function PerfilScreen() {
 
   if (!user) return null;
 
-  const roleStyle = ROLE_COLORS[user.role] || ROLE_COLORS.docente;
+  const roleStyle = ROLE_COLORS[user.role as string] || ROLE_COLORS.docente;
   const myEvidencesCount = evidences.filter(e => e.docenteId === user.id).length;
 
   const handleLogout = () => {

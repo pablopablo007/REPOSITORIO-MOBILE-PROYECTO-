@@ -45,6 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.error('Error cargando sesión', error);
+        await AsyncStorage.removeItem('@auth_token'); // Ensure token is cleared on error
       } finally {
         setIsLoading(false);
       }

@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1.0" name="viewport"/>
+<title>Manual de Uso - EduSudamericano</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&amp;family=Roboto:wght@300;400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: "#1e2d4a",
+            background: "#F9FAFB"
+          },
+          fontFamily: {
+            sans: ['Roboto', 'sans-serif'],
+            display: ['Outfit', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      background-color: #e2e8f0;
+      font-family: 'Roboto', sans-serif;
+    }
+    h1, h2, h3, h4, h5, h6, .font-display {
+      font-family: 'Outfit', sans-serif;
+    }
+    .page {
+      width: 210mm;
+      height: 297mm;
+      background: #F9FAFB;
+      margin: 20px auto;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      page-break-after: always;
+      break-after: page;
+    }
+    @media print {
+      body { background: white; margin: 0; }
+      .page { margin: 0; box-shadow: none; border: none; }
+    }
+    .page::before {
+      content: '';
+      position: absolute;
+      top: -100px;
+      right: -100px;
+      width: 300px;
+      height: 300px;
+      background: linear-gradient(135deg, rgba(30,45,74,0.03) 0%, rgba(30,45,74,0) 100%);
+      border-radius: 50%;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .page-content {
+      padding: 60px 50px;
+      flex-grow: 1;
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+    }
+    .footer {
+      position: absolute;
+      bottom: 30px;
+      left: 50px;
+      right: 50px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #94a3b8;
+      border-top: 1px solid rgba(226,232,240,0.6);
+      padding-top: 15px;
+      z-index: 10;
+      font-family: 'Outfit', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .chapter-portal {
+      background: #1e2d4a !important;
+      color: white;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    .chapter-portal::before {
+      background: radial-gradient(circle at center, rgba(59,130,246,0.1) 0%, transparent 70%);
+      width: 100%;
+      height: 100%;
+      top: 0;
+      right: 0;
+      border-radius: 0;
+    }
+    .device-frame {
+      border: 8px solid #1e2d4a;
+      border-radius: 28px;
+      overflow: hidden;
+      position: relative;
+      background: black;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      max-height: 400px;
+      width: auto;
+      aspect-ratio: 9/19;
+      margin: 0 auto;
+    }
+    .device-notch {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40%;
+      height: 12px;
+      background: #1e2d4a;
+      border-bottom-left-radius: 10px;
+      border-bottom-right-radius: 10px;
+      z-index: 10;
+    }
+    .device-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 1);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+      border-radius: 16px;
+    }
+    .step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #e0e7ff;
+      color: #3730a3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+    .flow-step {
+      background: white;
+      border: 1px solid #e2e8f0;
+      padding: 12px 24px;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 320px;
+      text-align: center;
+      font-weight: 600;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .flow-arrow {
+      width: 2px;
+      height: 15px;
+      background: #cbd5e1;
+      position: relative;
+    }
+    .flow-arrow::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: -3px;
+      border-width: 4px;
+      border-style: solid;
+      border-color: #cbd5e1 transparent transparent transparent;
+    }
+    p { text-align: justify; }
+  </style>
+</head>
+<body class="text-slate-700 antialiased">
+<!-- PAGE 1: COVER -->
+<div class="page !bg-[#1e2d4a] text-white items-center justify-center text-center">
+<div class="absolute inset-0 overflow-hidden pointer-events-none">
+<div class="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-blue-500/10 rounded-full blur-3xl"></div>
+<div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-500/10 rounded-full blur-3xl"></div>
+</div>
+<div class="relative z-10 px-12">
+<div class="text-7xl mb-8">📚</div>
+<h1 class="text-5xl font-extrabold mb-4 tracking-tight leading-tight">Manual de Uso<br/><span class="text-blue-300 font-light">EduSudamericano</span></h1>
+<p class="text-xl text-blue-100/70 mb-16 font-light tracking-wide !text-center">Guía de Gestión Docente y Evidencias</p>
+<div class="flex justify-center gap-12 border-t border-white/10 pt-10">
+<div><p class="text-[10px] uppercase text-blue-200/50 font-semibold mb-1 tracking-widest !text-center">Versión</p><p class="text-lg font-medium !text-center">1.0.0</p></div>
+<div><p class="text-[10px] uppercase text-blue-200/50 font-semibold mb-1 tracking-widest !text-center">Año</p><p class="text-lg font-medium !text-center">2026</p></div>
+<div><p class="text-[10px] uppercase text-blue-200/50 font-semibold mb-1 tracking-widest !text-center">Área</p><p class="text-lg font-medium !text-center">Docencia</p></div>
+</div>
+</div>
+<div class="footer !border-white/10 !text-blue-200/40">
+<span>EduSudamericano © 2026</span>
+<span>Página 1</span>
+</div>
+</div>
+<!-- PAGE 2: CREDITS -->
+<div class="page">
+<div class="page-content justify-center items-center">
+<div class="max-w-2xl w-full">
+<h2 class="text-2xl font-bold text-primary mb-10 text-center uppercase tracking-widest">Créditos y Agradecimientos</h2>
+<div class="grid grid-cols-2 gap-8">
+<div class="glass-card p-6">
+<h3 class="text-xs font-bold text-blue-600 mb-4 uppercase tracking-wider">Autoridades</h3>
+<ul class="space-y-4 text-xs">
+<li><strong class="block text-slate-900">Rector:</strong> Dr. Carlos Gabriel Pérez Pérez</li>
+<li><strong class="block text-slate-900">Vicerrector:</strong> Mgtr. Juan Marcelo Pérez</li>
+<li><strong class="block text-slate-900">Directora Académica:</strong> Dra. María Fernanda López</li>
+<li><strong class="block text-slate-900">Coord. de Innovación:</strong> Ing. Roberto Sánchez</li>
+</ul>
+</div>
+<div class="glass-card p-6">
+<h3 class="text-xs font-bold text-blue-600 mb-4 uppercase tracking-wider">Equipo Técnico</h3>
+<ul class="space-y-4 text-xs">
+<li><strong class="block text-slate-900">Desarrollo:</strong> Ingeniería en Sistemas</li>
+<li><strong class="block text-slate-900">Supervisión:</strong> CTEM Sudamericano</li>
+<li><strong class="block text-slate-900">Diseño Editorial:</strong> Comunicación Social</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="footer">
+<span>Créditos</span>
+<span>Página 2</span>
+</div>
+</div>
+<!-- PAGE 3: CHAPTER 1 TITLE -->
+<div class="page chapter-portal">
+<div class="z-10">
+<span class="text-blue-400 font-bold tracking-[0.3em] uppercase text-sm mb-4 block">Parte I</span>
+<h2 class="text-5xl font-extrabold mb-2">Capítulo 1</h2>
+<div class="w-20 h-1 bg-blue-500 mx-auto mb-6"></div>
+<p class="text-2xl text-blue-100/80 font-light !text-center">Contexto Institucional</p>
+</div>
+<div class="footer !border-white/10 !text-blue-200/40">
+<span>Contexto Institucional</span>
+<span>Página 3</span>
+</div>
+</div>
+<!-- PAGE 4: INTRO/PROLOGUE -->
+<div class="page">
+<div class="page-content justify-center">
+<div class="max-w-xl mx-auto">
+<h3 class="text-3xl font-bold text-primary mb-8 flex items-center gap-3">
+          1.1 Introducción
+        </h3>
+<div class="space-y-6 text-sm text-slate-600 leading-relaxed text-justify">
+<p>La gestión documental académica es un componente clave para los procesos de seguimiento, autoevaluación y acreditación en instituciones de educación superior. Cuando este flujo se realiza mediante carpetas físicas, mensajería informal o repositorios no integrados, aparecen problemas de duplicidad, pérdida de información, demoras en la revisión y dificultad para responder a auditorías académicas.</p>
+<p>Ante este escenario, se propone EduSudamericano, un aplicativo móvil cliente-servidor orientado a docentes. El sistema permite centralizar la carga, escaneo, almacenamiento y revisión de evidencias académicas. Esta solución reduce la fragmentación documental, mejora la trazabilidad del proceso y optimiza el tiempo que los docentes invierten en tareas administrativas.</p>
+</div>
+<div class="mt-12 pt-8 border-t border-slate-100 flex justify-end">
+<div class="text-right">
+<p class="font-bold text-primary italic">La Dirección Académica</p>
+<p class="text-xs text-slate-400 uppercase tracking-tighter">Instituto Superior Tecnológico Sudamericano</p>
+</div>
+</div>
+</div>
+</div>
+<div class="footer">
+<span>Introducción</span>
+<span>Página 4</span>
+</div>
+</div>
+<!-- PAGE 5: DESCRIPTION & FRAMEWORK -->
+<div class="page">
+<div class="page-content space-y-12 justify-center">
+<div class="max-w-xl mx-auto">
+<h3 class="text-2xl font-bold text-primary mb-6 border-b pb-2">1.2 Objetivos y Alcance</h3>
+<div class="space-y-8 text-sm leading-relaxed text-slate-600 text-justify">
+<div>
+<h4 class="text-base font-bold text-primary uppercase tracking-tight mb-2">Objetivo General</h4>
+<p>Documentar el diseño e implementación de un prototipo móvil para la gestión académica de evidencias docentes en el Instituto Superior Tecnológico Sudamericano, garantizando la trazabilidad, seguridad y accesibilidad de la información institucional en tiempo real.</p>
+</div>
+<div>
+<h4 class="text-base font-bold text-primary uppercase tracking-tight mb-2">Alcance y Relevancia</h4>
+<p>El sistema está dirigido al personal docente con responsabilidades documentales. La plataforma permite alinear la entrega de evidencias con los estándares de calidad, preparando a la institución para procesos de evaluación y acreditación mediante un repositorio digital estructurado y validado.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="footer">
+<span>Objetivos y Alcance</span>
+<span>Página 5</span>
+</div>
+</div>
+<!-- PAGE 6: CHAPTER 2 TITLE -->
+<div class="page chapter-portal">
+<div class="z-10">
+<span class="text-blue-400 font-bold tracking-[0.3em] uppercase text-sm mb-4 block">Parte II</span>
+<h2 class="text-5xl font-extrabold mb-2">Capítulo 2</h2>
+<div class="w-20 h-1 bg-blue-500 mx-auto mb-6"></div>
+<p class="text-2xl text-blue-100/80 font-light !text-center">Arquitectura y Metodología</p>
+</div>
+<div class="footer !border-white/10 !text-blue-200/40">
+<span>Arquitectura y Metodología</span>
+<span>Página 6</span>
+</div>
+</div>
+<!-- PAGE 7: FLOWCHART -->
+<div class="page">
+<div class="page-content justify-center items-center">
+<div class="w-full max-w-lg">
+<h3 class="text-2xl font-bold text-primary mb-6 text-center uppercase tracking-widest">2.1 Arquitectura del Sistema</h3>
+<div class="text-justify text-sm text-slate-600 mb-10 space-y-2">
+<p>El sistema utiliza una arquitectura cliente-servidor moderna y modular:</p>
+<ul class="list-disc pl-5 space-y-2">
+<li><strong>Aplicación Móvil (Cliente):</strong> Desarrollada con React Native y Expo, facilita una experiencia multiplataforma con acceso a cámara, generación de archivos PDF y gestión de estado local.</li>
+<li><strong>Backend (Servidor):</strong> Construido con Express y TypeScript, concentra las reglas de negocio, gestiona la autenticación mediante tokens JWT y expone una API REST.</li>
+<li><strong>Base de Datos:</strong> Emplea PostgreSQL junto con Prisma ORM para el modelado relacional de usuarios, evidencias, tareas y notificaciones.</li>
+</ul>
+</div>
+<h3 class="text-2xl font-bold text-primary mb-8 text-center uppercase tracking-widest">2.2 Flujo de Procesamiento</h3>
+<div class="flex flex-col items-center gap-2">
+<div class="flow-step">1. Asignación de Tareas <p class="text-[10px] text-slate-400 font-normal !text-center">Por coordinación administrativa</p></div>
+<div class="flow-arrow"></div>
+<div class="flow-step">2. Recepción de Notificación <p class="text-[10px] text-slate-400 font-normal !text-center">Alerta push en dispositivo móvil</p></div>
+<div class="flow-arrow"></div>
+<div class="flow-step">3. Acción Docente <p class="text-[10px] text-slate-400 font-normal !text-center">Carga de archivo o escaneo físico</p></div>
+<div class="flow-arrow"></div>
+<div class="flow-step">4. Procesamiento <p class="text-[10px] text-slate-400 font-normal !text-center">Validación de formato e integridad</p></div>
+<div class="flow-arrow"></div>
+<div class="flow-step !bg-emerald-50 !border-emerald-200 !text-emerald-800">5. Validación Final <p class="text-[10px] text-emerald-600 font-normal !text-center">Revisión y firma por el coordinador</p></div>
+</div>
+</div>
+</div>
+<div class="footer">
+<span>Arquitectura y Metodología</span>
+<span>Página 7</span>
+</div>
+</div>
+<!-- PAGE 8: CHAPTER 3 TITLE -->
+<div class="page chapter-portal">
+<div class="z-10">
+<span class="text-blue-400 font-bold tracking-[0.3em] uppercase text-sm mb-4 block">Parte III</span>
+<h2 class="text-5xl font-extrabold mb-2">Capítulo 3</h2>
+<div class="w-20 h-1 bg-blue-500 mx-auto mb-6"></div>
+<p class="text-2xl text-blue-100/80 font-light !text-center">Guía del Software</p>
+</div>
+<div class="footer !border-white/10 !text-blue-200/40">
+<span>Guía de Software</span>
+<span>Página 8</span>
+</div>
+</div>
+<!-- PAGE 9: 3.1 & 3.2 -->
+<div class="page">
+<div class="page-content space-y-10">
+<div class="grid grid-cols-2 gap-8 items-center">
+<div>
+<h3 class="text-xl font-bold text-primary mb-6 flex items-center gap-3">
+<span class="text-blue-600 font-extrabold">3.1</span> Tareas Asignadas
+          </h3>
+<div class="space-y-4 text-sm">
+<div class="flex gap-4"><span class="step-num">1</span><p>Acceda al ícono de <strong>Actividades</strong> en el menú inferior.</p></div>
+<div class="flex gap-4"><span class="step-num">2</span><p>Revise la lista de tareas pendientes clasificadas por fecha.</p></div>
+</div>
+<h3 class="text-xl font-bold text-primary mt-10 mb-6 flex items-center gap-3">
+<span class="text-blue-600 font-extrabold">3.2</span> Sistema de Urgencia
+          </h3>
+<div class="space-y-3">
+<div class="p-3 bg-red-50 border border-red-100 rounded-lg flex items-center gap-3">
+<div class="w-3 h-3 rounded-full bg-red-500"></div>
+<div><strong class="text-[10px] text-red-800 block uppercase">Urgente</strong><p class="text-[10px] text-red-600 !text-left">Vence en ≤ 3 días</p></div>
+</div>
+<div class="p-3 bg-amber-50 border border-amber-100 rounded-lg flex items-center gap-3">
+<div class="w-3 h-3 rounded-full bg-amber-400"></div>
+<div><strong class="text-[10px] text-amber-800 block uppercase">Próximo</strong><p class="text-[10px] text-amber-700 !text-left">Vencimiento cercano</p></div>
+</div>
+</div>
+</div>
+<div>
+<div class="device-frame">
+<div class="device-notch"></div>
+<img alt="Actividades" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCuqZZ-NylGh-Wm9kO-RlmjMHBjuxL9jNpn1ax-Km9iELx0lHpCM07p-3xQFl7hhsPwL0xG-sI2YXPhGpGnCk0_kdRKVTYPupQcgxJuZNgrZpDh8nlpcNnVtfrIFnpg__pThjHPuCHyX4lRhkb-8rsvoVl5IawAXpa7X8OaTmZaqfjrpDdEJt27Kj6bPVpriB1cbGTZQQwlg1LCqDF-SSRwpVxgRQBvsXHIpsczkWqBSNvZ--Drs-okohkC8BHsrFklP7WRu3vjtoZf"/>
+</div>
+</div>
+</div>
+</div>
+<div class="footer">
+<span>Tareas &amp; Urgencia</span>
+<span>Página 9</span>
+</div>
+</div>
+<!-- PAGE 10: 3.3 UPLOAD -->
+<div class="page">
+<div class="page-content justify-center">
+<div class="grid grid-cols-5 gap-12 items-center">
+<div class="col-span-3">
+<h3 class="text-2xl font-bold text-primary mb-6 flex items-center gap-4">
+<span class="text-blue-600">3.3</span> Subir Archivo Digital
+          </h3>
+<div class="glass-card p-6 bg-white">
+<p class="text-sm leading-relaxed mb-4 text-justify">
+              La opción de 'Subir Archivo' permite a los docentes adjuntar documentos digitales previamente elaborados, tales como planificaciones, sílabos, rúbricas o reportes en formato PDF y DOCX. Es fundamental asegurarse de que el archivo final no supere los 10MB de peso y que el nombre del documento siga la nomenclatura institucional para evitar confusiones. 
+            </p>
+<p class="text-sm leading-relaxed text-justify">
+              Una vez procesada la subida, el sistema encriptará el archivo de forma segura, verificará automáticamente la integridad del formato y enviará una alerta inmediata al coordinador de su área para iniciar el flujo de validación académica.
+            </p>
+</div>
+</div>
+<div class="col-span-2">
+<div class="device-frame !max-h-[450px]">
+<div class="device-notch"></div>
+<img alt="Upload" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbj8gP8xSuKfQWtgEv--4Y24ZmxQJK-Seqf4TjPQ3bgtJ6rt5GupsmZEX8mDNheffyjKxIu5PwKQh4mp2Flp32Tp0krUtyBv5nvLj7O-KFe7p-ONrPXAuwxUEQ7nbyo3UqeAhZZq4hNaXtxrdNhmJErz9bYHyALcJGgJH191fohbHPaXR7JCa-03wbKPXO7g-deuRfUBk-ALICJKuOYoyIuMF12-keYh0q4S0sxUIfquRsxPxojqv3DtR5Y5T8bkzZlBacQyVP-W_j"/>
+</div>
+</div>
+</div>
+</div>
+<div class="footer">
+<span>Carga de Archivos</span>
+<span>Página 10</span>
+</div>
+</div>
+<!-- PAGE 11: 3.4 SCANNER -->
+<div class="page">
+<div class="page-content justify-center">
+<div class="grid grid-cols-5 gap-12 items-center">
+<div class="col-span-2">
+<div class="device-frame !max-h-[450px]">
+<div class="device-notch"></div>
+<img alt="Scanner" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDOfMLuzPYYqwKVbuk761oMAQHZ61tFFZcWZShu8GZbp_rFo9N4xb0qTzdNSK3uArBnLmZBOnY5vOV47JRvx_cPoEQFpp9zI6pmTTQjtIbtsWppxOHS6EMCEjDvpnToEb12DvFm4jusJE5GIew26y5toCbhm3FgDT0cUBY1UEWxaPsWudCnVfQknSnZF34gEyQkFAk9AAqX-OTYsdaI9sYMXIj56GE4Ocq75XJ04KZXi3GodGYFiIcPdvY7HVRfh1GdI53nzpNT-MBG"/>
+</div>
+</div>
+<div class="col-span-3">
+<h3 class="text-2xl font-bold text-primary mb-6 flex items-center gap-4">
+<span class="text-blue-600">3.4</span> Escáner Integrado
+          </h3>
+<div class="glass-card p-6 bg-white">
+<p class="text-sm leading-relaxed mb-4 text-justify">
+              Conscientes de que aún manejamos documentos físicos que requieren firmas en tinta, nuestra herramienta de escáner integrada utiliza la cámara de su dispositivo móvil para digitalizar hojas de forma profesional. Para obtener resultados óptimos, coloque el papel sobre una superficie plana, oscura y con abundante luz natural. 
+            </p>
+<p class="text-sm leading-relaxed text-justify">
+              El algoritmo detectará automáticamente los bordes de la hoja, corrigiendo la perspectiva. Usted dispone de filtros de post-procesamiento (mejora de nitidez, escala de grises y alto contraste) para garantizar que los sellos y textos pequeños sean 100% legibles antes de generar el PDF multipágina final.
+            </p>
+</div>
+</div>
+</div>
+</div>
+<div class="footer">
+<span>Escáner Documental</span>
+<span>Página 11</span>
+</div>
+</div>
+<!-- PAGE 12: 3.5 & 3.6 -->
+<div class="page">
+<div class="page-content space-y-12">
+<div class="grid grid-cols-2 gap-10 items-start">
+<div>
+<h3 class="text-xl font-bold text-primary mb-6 flex items-center gap-3">
+<span class="text-blue-600 font-extrabold">3.5</span> Mis Archivos
+          </h3>
+<p class="text-xs mb-4">Historial completo de entregas y estados de validación.</p>
+<div class="glass-card overflow-hidden border border-slate-100">
+<table class="w-full text-[10px] text-left">
+<thead class="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider">
+<tr><th class="px-4 py-3">Estado</th><th class="px-4 py-3">Concepto</th></tr>
+</thead>
+<tbody class="divide-y divide-slate-100">
+<tr><td class="px-4 py-3"><span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">Validado</span></td><td class="px-4 py-3">Documento aceptado.</td></tr>
+<tr><td class="px-4 py-3"><span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">Pendiente</span></td><td class="px-4 py-3">En cola de revisión.</td></tr>
+<tr><td class="px-4 py-3"><span class="bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold">Observado</span></td><td class="px-4 py-3">Requiere corrección.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="flex justify-center">
+<div class="device-frame">
+<div class="device-notch"></div>
+<img alt="Archivos" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCql7T4uQc5pJWWLCz_HyVk16whCYuw8xB-05TizpqHFZh7_hrpwX0XjadY2e7B-tQoFoMVSG4DwVkf2p6y9SWssYhWShmRuRA58iDkNxAj5EMNwYW20_pqKcRD5wVhR9ZppjbuU1tzrnxtQe579M9kEQZoOIpHxxyJG93A6e8z5UiXMXucl0q50bbcxKsgcp-doDozDoYq0kYu8I6RuZtNetmExjP4AsMEeQV2G11vBMxq3y7vILv3pVLfqztiAIPqKIHsXOF5ryc8"/>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-10 items-start">
+<div class="flex justify-center">
+<div class="device-frame">
+<div class="device-notch"></div>
+<img alt="Notificaciones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAyfK8kDCHXp2yydztpsVmUXLXdIijKLdbooy1Y_q-J4ee_VDqi7C6RLgeZf_BHZCZAnffI-9fx5NBqXpStlhV5KIvRlsAOZ8ATvmZB6cdh1-zSoHGLczi8Nhk9MnsOSOThJ_v3WOISjSt-uA6aZ9KeDgoBTh-UhXqduN1Ve-88q43Gbe2UC5nZAEc6jfBf_JKjf7QLaaIp1L824rZXOCUbCciAyOFsANqZIqIDk3UKDoQ-KdnX2-AOEMS7ejVc8zj5OGAUuzg4HAo"/>
+</div>
+</div>
+<div>
+<h3 class="text-xl font-bold text-primary mb-6 flex items-center gap-3">
+<span class="text-blue-600 font-extrabold">3.6</span> Notificaciones
+          </h3>
+<p class="text-xs mb-4">Registro cronológico de alertas y retroalimentación.</p>
+<ul class="space-y-4">
+<li class="glass-card p-4 bg-blue-50/50 border-blue-100 flex gap-3">
+<div class="w-2 h-2 rounded-full bg-blue-500 mt-1"></div>
+<div><p class="text-[10px] font-bold text-primary">No leída</p><p class="text-[10px] text-slate-500">Destacada con fondo azul sutil.</p></div>
+</li>
+<li class="glass-card p-4 bg-slate-50 flex gap-3">
+<div class="w-2 h-2 rounded-full bg-slate-300 mt-1"></div>
+<div><p class="text-[10px] font-bold text-primary">Leída</p><p class="text-[10px] text-slate-500">Fondo estándar grisáceo.</p></div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="footer">
+<span>Gestión &amp; Avisos</span>
+<span>Página 12</span>
+</div>
+</div>
+<!-- PAGE 13: 3.7 & 3.8 -->
+<div class="page">
+<div class="page-content space-y-12">
+<div class="grid grid-cols-2 gap-10 items-center">
+<div>
+<h3 class="text-xl font-bold text-primary mb-6 flex items-center gap-3">
+<span class="text-blue-600 font-extrabold">3.7</span> Perfil del Docente
+          </h3>
+<p class="text-sm mb-6">Administre sus datos personales y preferencias de sesión desde el avatar superior.</p>
+<div class="glass-card p-4 border-l-4 border-red-500 bg-red-50/30">
+<p class="text-[10px] font-bold text-red-700 uppercase mb-1">Cierre Seguro</p>
+<p class="text-[10px] text-slate-600">Utilice siempre el botón 'Cerrar Sesión' al finalizar su jornada para proteger su información institucional.</p>
+</div>
+</div>
+<div class="flex justify-center">
+<div class="device-frame">
+<div class="device-notch"></div>
+<img alt="Perfil" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXTA-_ufz9xSgI8-8v1GOBWaS3qGMFxfSex9Mte3PWgeISF9ULZlLoazcJFQnXjmh_EMrmAsNHHOByiuw7dplfPGx1642s3QlP2R7ef-MO2mX5-MYP6oK10hw0pgMdOhBpD6jyvBWxWCd2SxhpRmyPoMf5g6jYnPMyrRcLNgi87EkP_RkjYMxJUKBi8yHnEumgMCZ7lO_7CHrUX-K0amMQhmSztnsQKZCJUrbkbtyxYW0Cg4gA8AOUOC9WCLn_-nTdQt962IFvPacP"/>
+</div>
+</div>
+</div>
+<div>
+<h3 class="text-xl font-bold text-primary mb-6 flex items-center gap-3">
+<span class="text-blue-600 font-extrabold">3.8</span> Mensajes del Sistema
+        </h3>
+<div class="glass-card overflow-hidden">
+<table class="w-full text-xs">
+<thead class="bg-primary/5 text-primary">
+<tr><th class="px-4 py-3 font-bold uppercase tracking-wider">Error Común</th><th class="px-4 py-3 font-bold uppercase tracking-wider">Solución Sugerida</th></tr>
+</thead>
+<tbody class="divide-y divide-slate-100">
+<tr><td class="px-4 py-3 font-medium">Error al generar PDF</td><td class="px-4 py-3">Verifique la iluminación y enfoque de la cámara.</td></tr>
+<tr><td class="px-4 py-3 font-medium">Cámara no disponible</td><td class="px-4 py-3">Revise los permisos de hardware en ajustes del móvil.</td></tr>
+<tr><td class="px-4 py-3 font-medium">Límite de tamaño excedido</td><td class="px-4 py-3">Reduzca la calidad de imagen o divida el archivo.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="footer">
+<span>Perfil &amp; Sistema</span>
+<span>Página 13</span>
+</div>
+</div>
+<!-- PAGE 14: CHAPTER 4 TITLE -->
+<div class="page chapter-portal">
+<div class="z-10">
+<span class="text-blue-400 font-bold tracking-[0.3em] uppercase text-sm mb-4 block">Parte IV</span>
+<h2 class="text-5xl font-extrabold mb-2">Capítulo 4</h2>
+<div class="w-20 h-1 bg-blue-500 mx-auto mb-6"></div>
+<p class="text-2xl text-blue-100/80 font-light !text-center">Soporte Técnico</p>
+</div>
+<div class="footer !border-white/10 !text-blue-200/40">
+<span>Soporte</span>
+<span>Página 14</span>
+</div>
+</div>
+<!-- PAGE 15: SUPPORT & GLOSSARY -->
+<div class="page">
+<div class="page-content space-y-12">
+<div class="grid grid-cols-2 gap-10">
+<div>
+<h3 class="text-lg font-bold text-primary mb-6 uppercase tracking-wider border-b pb-2">Glosario Técnico</h3>
+<div class="space-y-4">
+<div class="glass-card p-4">
+<strong class="text-xs text-primary block mb-1">Evidencia</strong>
+<p class="text-[10px] text-slate-500">Documento digital que respalda una actividad planificada en el POA institucional.</p>
+</div>
+<div class="glass-card p-4">
+<strong class="text-xs text-primary block mb-1">POA</strong>
+<p class="text-[10px] text-slate-500">Plan Operativo Anual: instrumento de gestión para la planificación estratégica.</p>
+</div>
+<div class="glass-card p-4">
+<strong class="text-xs text-primary block mb-1">Hashing</strong>
+<p class="text-[10px] text-slate-500">Proceso de encriptación para asegurar que el archivo no sea modificado tras la subida.</p>
+</div>
+</div>
+</div>
+<div>
+<h3 class="text-lg font-bold text-primary mb-6 uppercase tracking-wider border-b pb-2">Contacto Técnico</h3>
+<div class="glass-card p-6 bg-blue-900 text-white">
+<p class="text-xs mb-6 opacity-80">Si presenta dificultades persistentes con el uso de la aplicación, contacte con nuestro equipo:</p>
+<div class="space-y-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-blue-400">mail</span>
+<div><p class="text-[10px] font-bold">Email de Soporte</p><p class="text-[10px]">soporte@edusudamericano.edu</p></div>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-blue-400">call</span>
+<div><p class="text-[10px] font-bold">Línea Directa</p><p class="text-[10px]">+593 99 999 9999</p></div>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-blue-400">location_on</span>
+<div><p class="text-[10px] font-bold">Oficina Física</p><p class="text-[10px]">Bloque C - Dept. de Sistemas</p></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="pt-8 border-t border-slate-100">
+<p class="text-[10px] text-slate-400 text-center uppercase tracking-[0.2em]">Fin del Manual de Usuario v1.0.0</p>
+</div>
+</div>
+<div class="footer">
+<span>Glosario &amp; Contacto</span>
+<span>Página 15</span>
+</div>
+</div>
+</body></html>

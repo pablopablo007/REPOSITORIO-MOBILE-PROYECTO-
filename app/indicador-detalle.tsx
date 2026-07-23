@@ -31,7 +31,7 @@ export default function IndicadorDetalleScreen() {
 
   const handleSubirAqui = () => {
     router.push({
-      pathname: '/(docente)/subir',
+      pathname: '/(docente)/subir' as any,
       params: {
         fromIndicator: 'true',
         indicatorName: indicatorName || '',
