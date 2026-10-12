@@ -42,5 +42,4 @@ app-example
 /ios
 /android
 
-# Backend (no incluir en el repositorio)
-backend/
+# Backend - tiene su propio .gitignore con .env y node_modules excluidos
