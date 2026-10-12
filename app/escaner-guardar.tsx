@@ -11,6 +11,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,7 +23,6 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
-import { Card } from '../components/Card';
 import { DocumentType, useData } from '../contexts/DataContext';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -126,7 +128,6 @@ export default function EscanerGuardarScreen() {
       setEstado('convirtiendo');
       setMensaje('Leyendo imágenes...');
 
-      // CRÍTICO: convertir cada imagen a base64 antes de enviarla a expo-print.
       const imagenes = await Promise.all(
         pages.map(async (uri) => {
           const nombreTemp = `${FileSystem.cacheDirectory}scan_${Date.now()}_${Math.random()}.jpg`;
@@ -395,329 +396,421 @@ ${imagenes.map(src => `<div class="pagina"><img src="${src}"/></div>`).join('\n'
           <Ionicons name="refresh" size={20} color="#fff" />
           <Text style={styles.saveBtnText}>Reintentar</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel}>
-          <Text style={styles.cancelBtnText}>Cancelar</Text>
+        <TouchableOpacity style={styles.cancelBtnInline} onPress={handleCancel}>
+          <Text style={styles.cancelBtnTextInline}>Cancelar</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Card style={styles.previewCard}>
-        <Text style={styles.sectionTitle}>Vista previa</Text>
-        <View style={styles.previewBox}>
-          {pdfUri && !previewError ? (
-            <WebView
-              source={{ uri: pdfUri }}
-              style={styles.webView}
-              onError={() => setPreviewError(true)}
-              originWhitelist={['*']}
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView 
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+          
+          {/* Banner Superior Elegante */}
+          <View style={styles.successBanner}>
+            <Ionicons name="checkmark-circle" size={26} color="#10b981" />
+            <View style={styles.successTextContainer}>
+              <Text style={styles.successTitle}>PDF Generado Correctamente</Text>
+              <Text style={styles.successSubtitle}>{pages.length} página{pages.length > 1 ? 's' : ''} • {pdfTamaño}</Text>
+            </View>
+          </View>
+
+          {/* Vista Previa del PDF */}
+          <View style={styles.premiumCard}>
+            <View style={styles.cardHeaderRow}>
+              <Text style={styles.sectionTitle}>Vista previa del documento</Text>
+              <TouchableOpacity onPress={compartirPDF} style={styles.iconBtn}>
+                <Ionicons name="share-outline" size={22} color="#2563eb" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.previewBox}>
+              {pdfUri && !previewError ? (
+                <WebView
+                  source={{ uri: pdfUri }}
+                  style={styles.webView}
+                  onError={() => setPreviewError(true)}
+                  originWhitelist={['*']}
+                />
+              ) : (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.thumbnailRow}>
+                  {pages.map((uri, index) => (
+                    <View key={`${uri}-${index}`} style={styles.thumbnailCard}>
+                      <Image source={{ uri }} style={styles.thumbnailImage} resizeMode="cover" />
+                      <Text style={styles.thumbnailLabel}>Pág. {index + 1}</Text>
+                    </View>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+          </View>
+
+          {/* Formulario de Detalles */}
+          <View style={styles.premiumCard}>
+            <Text style={styles.sectionTitle}>Detalles del Documento</Text>
+
+            <Text style={styles.label}>Nombre del documento</Text>
+            <View style={styles.inputWrapper}>
+              <Ionicons name="document-text-outline" size={20} color="#64748b" style={styles.inputIcon} />
+              <TextInput
+                style={styles.inputText}
+                value={nombreEditable}
+                onChangeText={setNombreEditable}
+                placeholder="Nombre_del_documento.pdf"
+                placeholderTextColor="#9ca3af"
+                selectTextOnFocus
+              />
+            </View>
+
+            <Text style={styles.label}>Tipo de documento</Text>
+            <TouchableOpacity style={styles.inputWrapper} onPress={() => setShowTypeModal(true)}>
+              <Text style={styles.dropdownText}>
+                {DOCUMENT_TYPE_OPTIONS.find(option => option.value === tipoSeleccionado)?.label}
+              </Text>
+              <Ionicons name="chevron-down" size={18} color="#64748b" />
+            </TouchableOpacity>
+
+            <Text style={styles.label}>Período</Text>
+            <TouchableOpacity style={styles.inputWrapper} onPress={() => setShowPeriodModal(true)}>
+              <Text style={styles.dropdownText}>{periodoSeleccionado}</Text>
+              <Ionicons name="chevron-down" size={18} color="#64748b" />
+            </TouchableOpacity>
+
+            <Text style={styles.label}>Descripción (Opcional)</Text>
+            <TextInput
+              style={[styles.inputWrapper, styles.textArea]}
+              multiline
+              maxLength={300}
+              value={descripcion}
+              onChangeText={setDescripcion}
+              placeholder="Añade una descripción si es necesario..."
+              placeholderTextColor="#9ca3af"
             />
-          ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.thumbnailRow}>
-              {pages.map((uri, index) => (
-                <View key={`${uri}-${index}`} style={styles.thumbnailCard}>
-                  <Image source={{ uri }} style={styles.thumbnailImage} resizeMode="cover" />
-                  <Text style={styles.thumbnailLabel}>Pág. {index + 1}</Text>
-                </View>
-              ))}
-            </ScrollView>
-          )}
-        </View>
-      </Card>
+            <Text style={styles.charCount}>{descripcion.length}/300</Text>
+            
+            <View style={styles.divider} />
 
-      <Card style={styles.successCard}>
-        <View style={styles.successHeader}>
-          <Ionicons name="checkmark-circle" size={28} color="#16a34a" />
-          <Text style={styles.successTitle}>PDF generado correctamente</Text>
-        </View>
-        <Text style={styles.fileSummary} numberOfLines={2}>
-          📄 {nombreEditable} • {pages.length} página{pages.length > 1 ? 's' : ''} • {pdfTamaño}
-        </Text>
+            <Text style={styles.sectionTitle}>¿A qué actividad corresponde?</Text>
+            
+            {pendingTasks.map(task => {
+              const selected = tareaSeleccionada === task.id;
+              return (
+                <TouchableOpacity
+                  key={task.id}
+                  style={[styles.taskOption, selected && styles.taskOptionSelected]}
+                  activeOpacity={0.8}
+                  onPress={() => setTareaSeleccionada(task.id)}
+                >
+                  <Ionicons
+                    name={selected ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={24}
+                    color={selected ? '#2563eb' : '#cbd5e1'}
+                  />
+                  <View style={styles.taskOptionTextBox}>
+                    <Text style={[styles.taskOptionTitle, selected && styles.taskOptionTitleSelected]}>
+                      {task.title}
+                    </Text>
+                    <Text style={styles.taskOptionDate}>Vence el {formatTaskDate(task.deadline)}</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
 
-        <Text style={styles.label}>Nombre del documento</Text>
-        <View style={styles.fileNameRow}>
-          <Ionicons name="document-text" size={20} color="#ef4444" />
-          <TextInput
-            style={styles.fileNameInput}
-            value={nombreEditable}
-            onChangeText={setNombreEditable}
-            placeholder="Scan_DD-MM-YYYY.pdf"
-            selectTextOnFocus
-          />
-        </View>
-      </Card>
-
-      <TouchableOpacity style={styles.shareBtn} onPress={compartirPDF} activeOpacity={0.85}>
-        <Ionicons name="share-social-outline" size={20} color="#2563eb" />
-        <Text style={styles.shareBtnText}>📤 Descargar / Compartir PDF</Text>
-      </TouchableOpacity>
-
-      <Card style={styles.formCard}>
-        <Text style={styles.formTitle}>Guardar en Mis Documentos</Text>
-
-        <Text style={styles.label}>Nombre del documento</Text>
-        <View style={styles.fileNameRow}>
-          <Ionicons name="document-text" size={20} color="#ef4444" />
-          <TextInput
-            style={styles.fileNameInput}
-            value={nombreEditable}
-            onChangeText={setNombreEditable}
-            placeholder="Nombre del documento"
-          />
-        </View>
-
-        <Text style={styles.label}>Tipo de documento</Text>
-        <TouchableOpacity style={styles.dropdown} onPress={() => setShowTypeModal(true)}>
-          <Text style={styles.dropdownText}>
-            {DOCUMENT_TYPE_OPTIONS.find(option => option.value === tipoSeleccionado)?.label}
-          </Text>
-          <Ionicons name="chevron-down" size={18} color="#6b7280" />
-        </TouchableOpacity>
-
-        <Text style={styles.label}>Período</Text>
-        <TouchableOpacity style={styles.dropdown} onPress={() => setShowPeriodModal(true)}>
-          <Text style={styles.dropdownText}>{periodoSeleccionado}</Text>
-          <Ionicons name="chevron-down" size={18} color="#6b7280" />
-        </TouchableOpacity>
-
-        <Text style={styles.label}>Descripción (opcional)</Text>
-        <TextInput
-          style={[styles.input, styles.descriptionInput]}
-          multiline
-          maxLength={300}
-          value={descripcion}
-          onChangeText={setDescripcion}
-          placeholder="Escribe una breve descripción..."
-          placeholderTextColor="#9ca3af"
-        />
-        <Text style={styles.charCount}>{descripcion.length}/300</Text>
-
-        <View style={styles.divider} />
-
-        <Text style={styles.formTitle}>¿A qué actividad corresponde?</Text>
-        {pendingTasks.map(task => {
-          const selected = tareaSeleccionada === task.id;
-          return (
             <TouchableOpacity
-              key={task.id}
-              style={[styles.taskOption, selected && styles.taskOptionSelected]}
+              style={[styles.taskOption, tareaSeleccionada === 'ninguna' && styles.taskOptionSelected]}
               activeOpacity={0.8}
-              onPress={() => setTareaSeleccionada(task.id)}
+              onPress={() => setTareaSeleccionada('ninguna')}
             >
               <Ionicons
-                name={selected ? 'radio-button-on' : 'radio-button-off'}
-                size={22}
-                color={selected ? '#2563eb' : '#94a3b8'}
+                name={tareaSeleccionada === 'ninguna' ? 'checkmark-circle' : 'ellipse-outline'}
+                size={24}
+                color={tareaSeleccionada === 'ninguna' ? '#2563eb' : '#cbd5e1'}
               />
-              <View style={styles.taskOptionTextBox}>
-                <Text style={styles.taskOptionTitle}>{task.title}</Text>
-                <Text style={styles.taskOptionDate}>Fecha límite: {formatTaskDate(task.deadline)}</Text>
-              </View>
+              <Text style={[styles.taskOptionTitle, tareaSeleccionada === 'ninguna' && styles.taskOptionTitleSelected]}>
+                Ninguna (Guardar libre)
+              </Text>
             </TouchableOpacity>
-          );
-        })}
-        <TouchableOpacity
-          style={[styles.taskOption, tareaSeleccionada === 'ninguna' && styles.taskOptionSelected]}
-          activeOpacity={0.8}
-          onPress={() => setTareaSeleccionada('ninguna')}
-        >
-          <Ionicons
-            name={tareaSeleccionada === 'ninguna' ? 'radio-button-on' : 'radio-button-off'}
-            size={22}
-            color={tareaSeleccionada === 'ninguna' ? '#2563eb' : '#94a3b8'}
-          />
-          <Text style={styles.taskOptionTitle}>Ninguna (guardar solo en Mis Documentos)</Text>
-        </TouchableOpacity>
-      </Card>
 
-      <TouchableOpacity style={styles.saveBtn} onPress={guardarDocumento} activeOpacity={0.85}>
-        <Text style={styles.saveBtnEmoji}>💾</Text>
-        <Text style={styles.saveBtnText}>Guardar documento</Text>
-      </TouchableOpacity>
+          </View>
+        </ScrollView>
 
-      <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel} activeOpacity={0.8}>
-        <Text style={styles.cancelBtnText}>Cancelar</Text>
-      </TouchableOpacity>
+        {/* Bottom Bar para Botones de Acción Fijos */}
+        <View style={styles.bottomBar}>
+          <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel} activeOpacity={0.8}>
+            <Text style={styles.cancelBtnText}>Descartar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.saveBtn} onPress={guardarDocumento} activeOpacity={0.85}>
+            <Text style={styles.saveBtnText}>Guardar Documento</Text>
+            <Ionicons name="save-outline" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
 
       {renderPickerModal(showTypeModal, () => setShowTypeModal(false), DOCUMENT_TYPE_OPTIONS, setTipoSeleccionado, 'Tipo de documento')}
       {renderPickerModal(showPeriodModal, () => setShowPeriodModal(false), PERIOD_OPTIONS, setPeriodoSeleccionado, 'Período')}
-    </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: '#f1f5f9' },
+  keyboardView: { flex: 1 },
+  container: { flex: 1 },
+  content: { padding: 16, paddingBottom: 24 },
+
   convertingContainer: {
     flex: 1,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 20,
     padding: 32,
   },
-  convertingText: { fontSize: 19, color: '#1f2937', fontWeight: '700', textAlign: 'center' },
-  convertingSubtext: { fontSize: 13, color: '#9ca3af', marginTop: 8, textAlign: 'center' },
+  convertingText: { fontSize: 20, color: '#0f172a', fontWeight: '800', textAlign: 'center', marginTop: 24 },
+  convertingSubtext: { fontSize: 14, color: '#64748b', marginTop: 8, textAlign: 'center' },
+  
   errorContainer: {
     flex: 1,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
-    gap: 16,
   },
-  errorTitle: { fontSize: 18, fontWeight: '800', color: '#991b1b', textAlign: 'center' },
+  errorTitle: { fontSize: 18, fontWeight: '800', color: '#dc2626', textAlign: 'center', marginTop: 16 },
 
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
-  content: { padding: 16, paddingBottom: 40 },
-  previewCard: { marginBottom: 12 },
-  sectionTitle: { fontSize: 16, fontWeight: '800', color: '#1f2937', marginBottom: 10 },
-  previewBox: {
-    minHeight: 400,
-    borderRadius: 10,
-    overflow: 'hidden',
-    backgroundColor: '#eef2ff',
-    borderWidth: 1,
-    borderColor: '#dbeafe',
-  },
-  webView: { flex: 1, minHeight: 400, backgroundColor: '#fff' },
-  thumbnailRow: { padding: 12, gap: 12, alignItems: 'center' },
-  thumbnailCard: {
-    width: 142,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  thumbnailImage: { width: '100%', height: 180 },
-  thumbnailLabel: { padding: 8, fontSize: 12, color: '#475569', fontWeight: '700', textAlign: 'center' },
-
-  successCard: {
-    marginBottom: 12,
-    backgroundColor: '#f0fdf4',
-    borderWidth: 1,
-    borderColor: '#bbf7d0',
-  },
-  successHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  successTitle: { flex: 1, fontSize: 17, fontWeight: '800', color: '#15803d' },
-  fileSummary: { color: '#166534', fontSize: 13, fontWeight: '700', marginBottom: 8, lineHeight: 20 },
-
-  formCard: { marginTop: 12 },
-  formTitle: { fontSize: 17, fontWeight: '800', color: '#0f172a', marginBottom: 4 },
-  label: { fontSize: 14, fontWeight: '700', color: '#4b5563', marginBottom: 8, marginTop: 14 },
-  fileNameRow: {
-    minHeight: 46,
+  // Nuevos Estilos
+  successBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#fff',
+    backgroundColor: '#ecfdf5',
+    padding: 16,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderColor: '#a7f3d0',
+    marginBottom: 16,
   },
-  fileNameInput: { flex: 1, paddingVertical: 12, fontSize: 14, color: '#374151' },
-  dropdown: {
-    minHeight: 46,
+  successTextContainer: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  successTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#065f46',
+    marginBottom: 2,
+  },
+  successSubtitle: {
+    fontSize: 13,
+    color: '#047857',
+    fontWeight: '500',
+  },
+
+  premiumCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 15,
+    elevation: 3,
+  },
+  cardHeaderRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    alignItems: 'center',
+    marginBottom: 16,
   },
-  dropdownText: { fontSize: 14, color: '#374151', flex: 1 },
-  input: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    padding: 12,
-    color: '#1f2937',
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0f172a',
   },
-  descriptionInput: { height: 86, textAlignVertical: 'top' },
-  charCount: { fontSize: 12, color: '#6b7280', textAlign: 'right', marginTop: 4 },
-  divider: { height: 1, backgroundColor: '#e5e7eb', marginVertical: 18 },
+  iconBtn: {
+    padding: 6,
+    backgroundColor: '#eff6ff',
+    borderRadius: 8,
+  },
+  previewBox: {
+    height: 350,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  webView: { flex: 1, backgroundColor: '#fff' },
+  thumbnailRow: { padding: 12, gap: 12 },
+  thumbnailCard: {
+    width: 150,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  thumbnailImage: { width: '100%', height: 200 },
+  thumbnailLabel: { padding: 10, fontSize: 13, color: '#475569', fontWeight: '700', textAlign: 'center' },
+
+  label: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#64748b',
+    marginBottom: 8,
+    marginTop: 16,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 12,
+    minHeight: 52,
+    paddingHorizontal: 16,
+  },
+  inputIcon: {
+    marginRight: 10,
+  },
+  inputText: {
+    flex: 1,
+    fontSize: 15,
+    color: '#1e293b',
+    fontWeight: '500',
+    paddingVertical: 12,
+  },
+  dropdownText: {
+    fontSize: 15,
+    color: '#1e293b',
+    flex: 1,
+    fontWeight: '500',
+  },
+  textArea: {
+    height: 100,
+    alignItems: 'flex-start',
+    paddingTop: 16,
+  },
+  charCount: {
+    fontSize: 12,
+    color: '#94a3b8',
+    textAlign: 'right',
+    marginTop: 6,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#f1f5f9',
+    marginVertical: 24,
+  },
 
   taskOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    padding: 12,
-    borderRadius: 10,
+    backgroundColor: '#f8fafc',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    backgroundColor: '#fff',
-    marginTop: 8,
-  },
-  taskOptionSelected: { borderColor: '#93c5fd', backgroundColor: '#eff6ff' },
-  taskOptionTextBox: { flex: 1, minWidth: 0 },
-  taskOptionTitle: { flex: 1, fontSize: 14, fontWeight: '800', color: '#1f2937' },
-  taskOptionDate: { color: '#64748b', fontSize: 12, marginTop: 3 },
-
-  shareBtn: {
-    minHeight: 50,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#2563eb',
+    borderColor: '#cbd5e1',
     borderRadius: 12,
+    padding: 16,
+    marginBottom: 10,
   },
-  shareBtnText: { color: '#2563eb', fontSize: 15, fontWeight: '800' },
+  taskOptionSelected: {
+    backgroundColor: '#eff6ff',
+    borderColor: '#93c5fd',
+  },
+  taskOptionTextBox: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  taskOptionTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  taskOptionTitleSelected: {
+    color: '#1e40af',
+    fontWeight: '700',
+  },
+  taskOptionDate: {
+    fontSize: 13,
+    color: '#64748b',
+    marginTop: 4,
+  },
+
+  // Bottom Fixed Bar
+  bottomBar: {
+    flexDirection: 'row',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 10,
+    gap: 12,
+  },
   saveBtn: {
-    minHeight: 54,
+    flex: 2,
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
     backgroundColor: '#2563eb',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 12,
-    marginTop: 16,
-    shadowColor: '#2563eb',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  saveBtnEmoji: { fontSize: 18 },
-  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  cancelBtn: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 14,
     borderRadius: 12,
-    marginTop: 10,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    backgroundColor: '#fff',
+    paddingVertical: 16,
+    gap: 8,
   },
-  cancelBtnText: { fontSize: 15, color: '#6b7280', fontWeight: '700' },
+  saveBtnText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  cancelBtn: {
+    flex: 1,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    paddingVertical: 16,
+  },
+  cancelBtnText: {
+    color: '#64748b',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  cancelBtnInline: {
+    marginTop: 16,
+    padding: 12,
+  },
+  cancelBtnTextInline: {
+    color: '#64748b',
+    fontSize: 16,
+    fontWeight: '600',
+  },
 
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  // Modals
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.5)', justifyContent: 'flex-end' },
   modalContent: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     maxHeight: '70%',
-    paddingBottom: 34,
+    paddingBottom: 32,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: '#f1f5f9',
   },
-  modalTitle: { fontSize: 17, fontWeight: 'bold', color: '#1f2937' },
-  modalItem: { paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
-  modalItemText: { fontSize: 15, color: '#374151' },
+  modalTitle: { fontSize: 18, fontWeight: '800', color: '#0f172a' },
+  modalItem: { paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f8fafc' },
+  modalItemText: { fontSize: 16, color: '#334155', fontWeight: '500' },
 });

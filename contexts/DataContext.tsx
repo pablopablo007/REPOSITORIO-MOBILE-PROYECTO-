@@ -24,6 +24,7 @@ export interface Evidence {
   date: string;
   status: BadgeStatus;
   comment?: string;
+  reviewerName?: string;
   description?: string;
   iaGenerated?: boolean;
   scanned?: boolean;
@@ -64,6 +65,8 @@ export interface Notification {
   date: string;
   read: boolean;
   type: 'success' | 'warning' | 'info';
+  evidenceId?: string;
+  taskId?: string;
 }
 
 interface DataContextData {

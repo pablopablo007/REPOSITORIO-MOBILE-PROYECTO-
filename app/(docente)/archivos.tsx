@@ -355,37 +355,37 @@ export default function ArchivosScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Hero Header */}
-      <View style={styles.heroCard}>
-        <Text style={styles.heroTitle}>Mis Archivos</Text>
-        <Text style={styles.heroSubtitle}>
+      {/* Summary Header */}
+      <View style={styles.summaryBar}>
+        <Text style={styles.summaryText}>
           {myEvidences.length} documentos • {validadosCount} validados • {observadosCount} observados
         </Text>
       </View>
 
       <View style={styles.filtersSection}>
         <View style={styles.searchBox}>
-          <Ionicons name="search" size={18} color="#94a3b8" />
+          <Ionicons name="search" size={18} color="#64748b" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Buscar archivo..."
+            placeholder="Buscar por nombre..."
             placeholderTextColor="#94a3b8"
             value={search}
             onChangeText={setSearch}
           />
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersContent}>
+        <View style={styles.filtersGrid}>
           {FILTERS.map(f => (
             <TouchableOpacity 
               key={f} 
               style={[styles.filterPill, filter === f && styles.filterPillActive]}
               onPress={() => setFilter(f)}
+              activeOpacity={0.7}
             >
               <Text style={[styles.filterPillText, filter === f && styles.filterPillTextActive]}>{f}</Text>
             </TouchableOpacity>
           ))}
-        </ScrollView>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.list}>
@@ -393,11 +393,14 @@ export default function ArchivosScreen() {
         
         {visibleDocs.length === 0 && (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>📂</Text>
-            <Text style={styles.emptyTitle}>Sin documentos aún</Text>
-            <Text style={styles.emptySubtitle}>Sube tu primer archivo{"\n"}tocando el botón +</Text>
-            <TouchableOpacity style={styles.emptyBtn} onPress={handleSubirDirecto}>
-              <Text style={styles.emptyBtnText}>+ Subir primer archivo</Text>
+            <View style={styles.emptyIconBox}>
+              <Ionicons name="folder-open-outline" size={48} color="#94a3b8" />
+            </View>
+            <Text style={styles.emptyTitle}>¡Todo limpio!</Text>
+            <Text style={styles.emptySubtitle}>Aún no hay documentos aquí. Sube tu primer archivo o escanea uno nuevo para empezar.</Text>
+            <TouchableOpacity style={styles.emptyBtn} onPress={handleSubirDirecto} activeOpacity={0.85}>
+              <Ionicons name="cloud-upload" size={18} color="#fff" />
+              <Text style={styles.emptyBtnText}>Subir Documento</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -536,59 +539,58 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f4f6f9',
   },
-  heroCard: {
-    backgroundColor: '#1e2d4a',
-    width: '100%',
-    paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 24,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
+  summaryBar: {
+    backgroundColor: '#ffffff',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+    alignItems: 'center',
     zIndex: 10,
   },
-  heroTitle: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: '#ffffff',
-  },
-  heroSubtitle: {
-    fontSize: 13,
-    color: '#aac4e8',
-    marginTop: 8,
+  summaryText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#475569',
   },
   filtersSection: {
-    paddingTop: 20,
-    paddingBottom: 10,
+    paddingTop: 16,
+    paddingBottom: 8,
+    paddingHorizontal: 16,
   },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+    backgroundColor: '#f1f5f9',
     borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 44,
-    marginHorizontal: 16,
-    marginBottom: 12,
+    paddingHorizontal: 14,
+    height: 48,
+    marginBottom: 16,
   },
   searchInput: {
     flex: 1,
-    marginLeft: 8,
-    fontSize: 14,
+    marginLeft: 10,
+    fontSize: 15,
     color: '#0f172a',
+    fontWeight: '500',
   },
-  filtersContent: {
-    paddingHorizontal: 16,
+  filtersGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
   },
   filterPill: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#fff',
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#e2e8f0',
-    marginRight: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.02,
+    shadowRadius: 4,
+    elevation: 1,
   },
   filterPillActive: {
     backgroundColor: '#2563eb',
@@ -596,11 +598,11 @@ const styles = StyleSheet.create({
   },
   filterPillText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#64748b',
   },
   filterPillTextActive: {
-    color: '#fff',
+    color: '#ffffff',
   },
   list: {
     padding: 16,
@@ -724,34 +726,49 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 60,
+    paddingHorizontal: 20,
   },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: 16,
+  emptyIconBox: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#334155',
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#0f172a',
     marginBottom: 8,
   },
   emptySubtitle: {
-    fontSize: 14,
-    color: '#94a3b8',
+    fontSize: 15,
+    color: '#64748b',
     textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 20,
+    marginBottom: 28,
+    lineHeight: 22,
   },
   emptyBtn: {
-    backgroundColor: '#e2e8f0',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#2563eb',
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+    shadowColor: '#2563eb',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   emptyBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#475569',
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ffffff',
   },
   fab: {
     position: 'absolute',

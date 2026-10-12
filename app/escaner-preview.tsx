@@ -668,9 +668,7 @@ export default function EscanerPreviewScreen() {
   const existingPages: string[] = params.existingPages ? JSON.parse(params.existingPages) : [];
 
   const [currentUri, setCurrentUri] = useState(originalUri);
-  const [bnActive, setBnActive] = useState(false);
-  const [brightnessUp, setBrightnessUp] = useState(false);
-  const [contrastUp, setContrastUp] = useState(false);
+
   const [rotationCount, setRotationCount] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingLabel, setProcessingLabel] = useState('Procesando...');
@@ -938,21 +936,15 @@ export default function EscanerPreviewScreen() {
     setMostrarConfirmacionRecorte(true);
   }, [currentUri]);
 
-  const toggleBN = () => setBnActive(!bnActive);
-  const toggleBrightness = () => setBrightnessUp(!brightnessUp);
-
   const handleRevertir = () => {
     setCurrentUri(originalUri);
-    setBnActive(false);
-    setBrightnessUp(false);
-    setContrastUp(false);
     setRotationCount(0);
     setMargenes(null);
     setCropCorners(null);
     Toast.show({ type: 'success', text1: 'Imagen restaurada', text2: 'Se revirtieron todos los cambios.' });
   };
 
-  const hasChanges = currentUri !== originalUri || bnActive || brightnessUp || contrastUp || rotationCount > 0;
+  const hasChanges = currentUri !== originalUri || rotationCount > 0;
 
   const handleRetake = () => {
     router.back();
@@ -1036,8 +1028,7 @@ export default function EscanerPreviewScreen() {
   };
 
   const enhancementButtons = [
-    { key: 'bn', icon: 'moon-outline' as const, label: 'B/N', active: bnActive, onPress: toggleBN },
-    { key: 'brillo', icon: 'sunny-outline' as const, label: 'Brillo+', active: brightnessUp, onPress: toggleBrightness },
+
     { key: 'rotar', icon: 'refresh-outline' as const, label: 'Rotar', active: false, onPress: handleRotate },
     { key: 'manual', icon: 'crop-outline' as const, label: 'Recortar', active: false, onPress: handleManualCrop },
     { key: 'auto', icon: 'scan-outline' as const, label: 'Automático', active: detectando, onPress: procesarMargenes },
@@ -1063,9 +1054,7 @@ export default function EscanerPreviewScreen() {
         <View style={styles.imageContainer}>
           <View style={styles.imageWrapper}>
             <Image source={{ uri: currentUri }} style={styles.image} resizeMode="contain" />
-            {bnActive && <View style={styles.bnOverlay} />}
-            {brightnessUp && <View style={styles.brightnessOverlay} />}
-            {contrastUp && <View style={styles.contrastOverlay} />}
+
           </View>
 
           {busy && (
@@ -1092,23 +1081,8 @@ export default function EscanerPreviewScreen() {
           ))}
         </View>
 
-        {(bnActive || brightnessUp || contrastUp || rotationCount > 0) && (
+        {(rotationCount > 0) && (
           <View style={styles.activeEffects}>
-            {bnActive && (
-              <View style={styles.effectTag}>
-                <Text style={styles.effectTagText}>B/N activo</Text>
-              </View>
-            )}
-            {brightnessUp && (
-              <View style={styles.effectTag}>
-                <Text style={styles.effectTagText}>Brillo+</Text>
-              </View>
-            )}
-            {contrastUp && (
-              <View style={styles.effectTag}>
-                <Text style={styles.effectTagText}>Contraste+</Text>
-              </View>
-            )}
             {rotationCount > 0 && (
               <View style={styles.effectTag}>
                 <Text style={styles.effectTagText}>Rotado {(rotationCount * 90) % 360}°</Text>

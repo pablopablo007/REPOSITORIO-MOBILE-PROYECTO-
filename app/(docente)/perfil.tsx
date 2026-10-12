@@ -164,17 +164,36 @@ export default function PerfilScreen() {
         {/* STATS */}
         {!isEditing && (
           <View style={styles.statsContainer}>
-            <View style={[styles.statCard, { borderTopColor: '#3b82f6' }]}>
-              <Text style={styles.statNum}>{subidos}</Text>
-              <Text style={styles.statLabel}>Subidos</Text>
-            </View>
-            <View style={[styles.statCard, { borderTopColor: '#d97706' }]}>
-              <Text style={styles.statNum}>{entregados}</Text>
-              <Text style={styles.statLabel}>Entregados</Text>
-            </View>
-            <View style={[styles.statCard, { borderTopColor: '#15803d' }]}>
-              <Text style={styles.statNum}>{validados}</Text>
-              <Text style={styles.statLabel}>Validados</Text>
+            <View style={styles.unifiedStatsCard}>
+              
+              <View style={styles.statItem}>
+                <View style={[styles.statIconBadge, { backgroundColor: '#eff6ff' }]}>
+                  <Ionicons name="cloud-upload" size={16} color="#3b82f6" />
+                </View>
+                <Text style={styles.statNum}>{subidos}</Text>
+                <Text style={styles.statLabel}>Subidos</Text>
+              </View>
+
+              <View style={styles.statDivider} />
+
+              <View style={styles.statItem}>
+                <View style={[styles.statIconBadge, { backgroundColor: '#fef3c7' }]}>
+                  <Ionicons name="document-text" size={16} color="#d97706" />
+                </View>
+                <Text style={styles.statNum}>{entregados}</Text>
+                <Text style={styles.statLabel}>Entregados</Text>
+              </View>
+
+              <View style={styles.statDivider} />
+
+              <View style={styles.statItem}>
+                <View style={[styles.statIconBadge, { backgroundColor: '#f0fdf4' }]}>
+                  <Ionicons name="checkmark-circle" size={16} color="#15803d" />
+                </View>
+                <Text style={styles.statNum}>{validados}</Text>
+                <Text style={styles.statLabel}>Validados</Text>
+              </View>
+
             </View>
           </View>
         )}
@@ -182,8 +201,8 @@ export default function PerfilScreen() {
         {/* INFO SECTION */}
         <View style={styles.infoSection}>
           <View style={styles.infoRow}>
-            <View style={styles.infoIconBox}>
-              <Ionicons name="mail-outline" size={20} color="#64748b" />
+            <View style={[styles.infoIconBox, { backgroundColor: '#eff6ff' }]}>
+              <Ionicons name="mail" size={20} color="#3b82f6" />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Correo electrónico</Text>
@@ -192,8 +211,8 @@ export default function PerfilScreen() {
           </View>
 
           <View style={styles.infoRow}>
-            <View style={styles.infoIconBox}>
-              <Ionicons name="call-outline" size={20} color="#64748b" />
+            <View style={[styles.infoIconBox, { backgroundColor: '#f0fdf4' }]}>
+              <Ionicons name="call" size={20} color="#16a34a" />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Teléfono</Text>
@@ -206,8 +225,8 @@ export default function PerfilScreen() {
           </View>
 
           <View style={styles.infoRow}>
-            <View style={styles.infoIconBox}>
-              <Ionicons name="business-outline" size={20} color="#64748b" />
+            <View style={[styles.infoIconBox, { backgroundColor: '#f3e8ff' }]}>
+              <Ionicons name="business" size={20} color="#9333ea" />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Departamento</Text>
@@ -220,8 +239,8 @@ export default function PerfilScreen() {
           </View>
 
           <View style={styles.infoRow}>
-            <View style={styles.infoIconBox}>
-              <Ionicons name="calendar-outline" size={20} color="#64748b" />
+            <View style={[styles.infoIconBox, { backgroundColor: '#fef3c7' }]}>
+              <Ionicons name="calendar" size={20} color="#d97706" />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Período activo</Text>
@@ -234,8 +253,8 @@ export default function PerfilScreen() {
           </View>
 
           <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
-            <View style={styles.infoIconBox}>
-              <Ionicons name="school-outline" size={20} color="#64748b" />
+            <View style={[styles.infoIconBox, { backgroundColor: '#fee2e2' }]}>
+              <Ionicons name="school" size={20} color="#dc2626" />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Título</Text>
@@ -252,7 +271,9 @@ export default function PerfilScreen() {
         <View style={styles.settingsSection}>
           <View style={styles.settingRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name="notifications-outline" size={20} color="#64748b" style={{ marginRight: 12 }} />
+              <View style={[styles.infoIconBox, { backgroundColor: '#f1f5f9', marginRight: 12 }]}>
+                <Ionicons name="notifications" size={20} color="#64748b" />
+              </View>
               <Text style={styles.settingLabel}>Notificaciones</Text>
             </View>
             <Switch 
@@ -265,15 +286,17 @@ export default function PerfilScreen() {
 
           <View style={[styles.settingRow, { borderBottomWidth: 0 }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name="information-circle-outline" size={20} color="#64748b" style={{ marginRight: 12 }} />
+              <View style={[styles.infoIconBox, { backgroundColor: '#f1f5f9', marginRight: 12 }]}>
+                <Ionicons name="information-circle" size={20} color="#64748b" />
+              </View>
               <Text style={styles.settingLabel}>Versión de la app</Text>
             </View>
             <Text style={styles.versionText}>v1.0.0</Text>
           </View>
         </View>
 
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={20} color="#dc2626" />
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
+          <Ionicons name="log-out-outline" size={22} color="#dc2626" />
           <Text style={styles.logoutText}>Cerrar sesión</Text>
         </TouchableOpacity>
 
@@ -295,8 +318,8 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingBottom: 40,
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
     alignItems: 'center',
     zIndex: 10,
   },
@@ -322,7 +345,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   headerSaveText: {
-    color: '#3b82f6',
+    color: '#93c5fd',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -330,19 +353,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarPlaceholder: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     backgroundColor: '#2563eb',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
+    borderWidth: 4,
+    borderColor: '#ffffff',
   },
   avatarImg: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     marginBottom: 12,
+    borderWidth: 4,
+    borderColor: '#ffffff',
   },
   avatarInitials: {
     color: '#fff',
@@ -360,12 +387,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#1e2d4a',
+    borderColor: '#ffffff',
   },
   heroName: {
     color: '#fff',
     fontSize: 22,
-    fontWeight: 'bold',
+    fontWeight: '800',
     marginBottom: 4,
   },
   heroEmail: {
@@ -385,33 +412,50 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    marginTop: -20,
+    marginTop: -30,
     zIndex: 20,
   },
-  statCard: {
-    backgroundColor: '#fff',
-    width: '31%',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    borderTopWidth: 4,
+  unifiedStatsCard: {
+    flexDirection: 'row',
+    backgroundColor: '#ffffff',
+    width: '100%',
+    borderRadius: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowRadius: 10,
+    elevation: 4,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statDivider: {
+    width: 1,
+    height: 50,
+    backgroundColor: '#f1f5f9',
+  },
+  statIconBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
   },
   statNum: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '800',
     color: '#0f172a',
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#64748b',
     fontWeight: '600',
   },
@@ -419,11 +463,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     marginHorizontal: 20,
     marginTop: 24,
-    borderRadius: 16,
+    borderRadius: 20,
     paddingHorizontal: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
     shadowRadius: 8,
     elevation: 2,
   },
@@ -435,27 +479,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   infoIconBox: {
-    width: 36,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   infoContent: {
     flex: 1,
-    paddingLeft: 8,
+    paddingLeft: 12,
   },
   infoLabel: {
     fontSize: 12,
     color: '#64748b',
+    fontWeight: '600',
     marginBottom: 4,
   },
   infoText: {
     fontSize: 15,
     color: '#0f172a',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: '#f8fafc',
     borderWidth: 1,
-    borderColor: '#2563eb',
+    borderColor: '#93c5fd',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -466,11 +514,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     marginHorizontal: 20,
     marginTop: 24,
-    borderRadius: 16,
+    borderRadius: 20,
     paddingHorizontal: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
     shadowRadius: 8,
     elevation: 2,
   },
@@ -485,27 +533,26 @@ const styles = StyleSheet.create({
   settingLabel: {
     fontSize: 15,
     color: '#0f172a',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   versionText: {
     fontSize: 14,
     color: '#64748b',
+    fontWeight: '500',
   },
   logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#fef2f2',
     marginHorizontal: 20,
     marginTop: 24,
-    paddingVertical: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#fca5a5',
+    paddingVertical: 18,
+    borderRadius: 16,
   },
   logoutText: {
     color: '#dc2626',
-    fontWeight: 'bold',
+    fontWeight: '800',
     fontSize: 16,
     marginLeft: 8,
   },
